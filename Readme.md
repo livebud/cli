@@ -41,10 +41,10 @@ func main() {
 	cli.Flag("embed", "embed the code").Bool(&flag.Embed).Default(false)
 
 	{ // new <dir>
-		cmd := &New{Flag: flag}
-		cli := cli.Command("new", "create a new project")
-		cli.Arg("dir").String(&cmd.Dir)
-		cli.Run(cmd.Run)
+	  cmd := &New{Flag: flag}
+	  cli := cli.Command("new", "create a new project")
+	  cli.Arg("dir").String(&cmd.Dir)
+	  cli.Run(cmd.Run)
 	}
 
 	ctx := context.Background()
