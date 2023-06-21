@@ -1,6 +1,8 @@
 # CLI
 
-Build beautiful CLIs in Go. A simpler alternative to Kingpin.
+Build beautiful CLIs in Go. A simpler alternative to [kingpin](https://github.com/alecthomas/kingpin).
+
+<img width="601" alt="CleanShot 2023-06-20 at 22 23 14@2x" src="https://github.com/livebud/cli/assets/170299/f29b7f43-ff1a-445e-9642-af300742ae4f">
 
 ## Features
 
