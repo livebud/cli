@@ -9,7 +9,7 @@ Build beautiful CLIs in Go. A simpler alternative to [kingpin](https://github.co
 - Type-safe, fluent API
 - Flag, command and argument support
 - Required and optional parameters
-- Built entirely on the `flag` package the standard library
+- Built entirely on the [flag](https://pkg.go.dev/flag) package the standard library
 - Colon-based subcommands (e.g. `new:controller`)
 - Transparent context cancellation
 - Custom help messages
