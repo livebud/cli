@@ -1876,7 +1876,7 @@ func TestHiddenCommandRunnable(t *testing.T) {
 
 func ExampleCLI() {
 	flag := new(Flag)
-	cli := cli.New("app", "your awesome cli").Writer(os.Stdout)
+	cli := cli.New("app", "your awesome cli").Writer(os.Stderr)
 	cli.Flag("chdir", "change the dir").Short('C').String(&flag.Dir).Default(".")
 	cli.Flag("embed", "embed the code").Bool(&flag.Embed).Default(false)
 

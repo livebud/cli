@@ -6,10 +6,9 @@ import (
 	"flag"
 	"io"
 	"os"
+	"os/signal"
 	"strings"
 	"text/template"
-
-	"github.com/livebud/cli/internal/signals"
 )
 
 var ErrCommandNotFound = errors.New("command not found")
@@ -84,7 +83,7 @@ type Parser interface {
 
 func (c *CLI) Parse(ctx context.Context, args ...string) error {
 	// Setup the context
-	ctx = signals.Trap(ctx, c.signals...)
+	ctx = trap(ctx, c.signals...)
 	// Setup the flagset
 	fset := flag.NewFlagSet(c.name, flag.ContinueOnError)
 	fset.SetOutput(io.Discard)
@@ -160,4 +159,17 @@ func getRoot(c *subcommand) *subcommand {
 
 func (c *CLI) printUsage(s *subcommand) error {
 	return c.usage.Execute(c.writer, &usage{s, getRoot(s)})
+}
+
+func trap(parent context.Context, signals ...os.Signal) context.Context {
+	if len(signals) == 0 {
+		return parent
+	}
+	ctx, stop := signal.NotifyContext(parent, signals...)
+	// If context was canceled, stop catching signals
+	go func() {
+		<-ctx.Done()
+		stop()
+	}()
+	return ctx
 }
