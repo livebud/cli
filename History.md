@@ -1,3 +1,7 @@
+# 0.0.4 / 2023-10-22
+
+- update release script
+
 # 0.0.3 / 2023-10-22
 
 - Add ability to infer flags and args from struct tags.
