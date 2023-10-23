@@ -14,4 +14,4 @@ release: test
 	@ git commit -am "Release v$(VERSION)"
 	@ git tag "v$(VERSION)"
 	@ git push origin main "v$(VERSION)"
-	@ go run github.com/cli/cli/v2/cmd/gh@5023b61 release create --notes-file=History.md "v$(VERSION)"
+	@ go run github.com/cli/cli/v2/cmd/gh@5023b61 release create --generate-notes "v$(VERSION)"
