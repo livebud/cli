@@ -1,3 +1,8 @@
+# 0.0.3 / 2023-10-22
+
+- Add ability to infer flags and args from struct tags.
+- Support calling multiple runners at once
+
 # 0.0.2 / 2023-10-07
 
 - switch to using signal.NotifyContext
