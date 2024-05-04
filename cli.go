@@ -18,8 +18,8 @@ type value interface {
 	verify(displayName string) error
 }
 
-func New(name, help string, runners ...Runner) *CLI {
-	cli := &CLI{
+func New(name, help string) *CLI {
+	return &CLI{
 		&subcommand{
 			nil,
 			name,
@@ -37,12 +37,6 @@ func New(name, help string, runners ...Runner) *CLI {
 		defaultUsage,
 		os.Stdout,
 	}
-	cli.reflectRunners(cli, runners...)
-	return cli
-}
-
-type Parser interface {
-	Parse(ctx context.Context, args ...string) error
 }
 
 type CLI struct {
@@ -53,7 +47,6 @@ type CLI struct {
 }
 
 var _ Command = (*CLI)(nil)
-var _ Parser = (*CLI)(nil)
 
 func (c *CLI) Writer(w io.Writer) *CLI {
 	c.writer = w
@@ -69,6 +62,24 @@ func (c *CLI) Signals(signals ...os.Signal) *CLI {
 	c.signals = signals
 	return c
 }
+
+// TODO: rename
+// type User interface {
+// 	Use(cmd Command)
+// 	Run(ctx context.Context) error
+// }
+
+func (c *CLI) Mounter(m Mounter) {
+	m.Mount(c)
+}
+
+type Parser interface {
+	Parse(ctx context.Context, args ...string) error
+}
+
+// func (c *CLI) Use(name string, user User) {
+// 	c.subcommand.Use(name, user)
+// }
 
 func (c *CLI) Parse(ctx context.Context, args ...string) error {
 	// Setup the context

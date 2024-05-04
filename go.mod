@@ -1,13 +1,10 @@
 module github.com/livebud/cli
 
-go 1.21rc3
-
-toolchain go1.21.0
+go 1.20
 
 require (
 	github.com/matryer/is v1.4.1
 	github.com/matthewmueller/diff v0.0.0-20220110044814-1b370be97fd0
-	golang.org/x/sync v0.4.0
 )
 
 require (
