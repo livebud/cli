@@ -159,7 +159,7 @@ func heroku(w io.Writer) *cli.CLI {
 			cli := cli.Command("scale", `scale dyno quantity up or down`)
 			cli.Flag("app", "app to run command against").Short('a').String(&in.App)
 			cli.Flag("remote", "git remote of app to use").Short('r').Optional().String(&in.Remote)
-			cli.Arg("value").String(&in.Value)
+			cli.Arg("value", "some value").String(&in.Value)
 			cli.Run(func(ctx context.Context) error { return encode(w, "ps:scale", in) })
 		}
 
@@ -334,8 +334,8 @@ func TestHelpArgs(t *testing.T) {
 	is := is.New(t)
 	actual := new(bytes.Buffer)
 	cmd := cli.New("cp", "copy files").Writer(actual)
-	cmd.Arg("src").String(nil)
-	cmd.Arg("dst").String(nil).Default(".")
+	cmd.Arg("src", "source").String(nil)
+	cmd.Arg("dst", "destination").String(nil).Default(".")
 	cmd.Run(func(ctx context.Context) error { return nil })
 	ctx := context.Background()
 	err := cmd.Parse(ctx, "-h")
@@ -684,7 +684,7 @@ func TestArgStringMap(t *testing.T) {
 		return nil
 	})
 	var args map[string]string
-	cli.Arg("arg").StringMap(&args)
+	cli.Arg("arg", "arg map").StringMap(&args)
 	// Can have only one arg
 	ctx := context.Background()
 	err := cli.Parse(ctx, "a:1 + 1")
@@ -703,7 +703,7 @@ func TestArgStringMapRequired(t *testing.T) {
 		return nil
 	})
 	var args map[string]string
-	cli.Arg("arg").StringMap(&args)
+	cli.Arg("arg", "arg map").StringMap(&args)
 	ctx := context.Background()
 	err := cli.Parse(ctx)
 	is.True(err != nil)
@@ -720,7 +720,7 @@ func TestArgStringMapDefault(t *testing.T) {
 		return nil
 	})
 	var args map[string]string
-	cli.Arg("arg").StringMap(&args).Default(map[string]string{
+	cli.Arg("arg", "arg map").StringMap(&args).Default(map[string]string{
 		"a": "1",
 		"b": "2",
 	})
@@ -871,7 +871,7 @@ func TestArgString(t *testing.T) {
 		return nil
 	})
 	var arg string
-	cli.Arg("arg").String(&arg)
+	cli.Arg("arg", "arg string").String(&arg)
 	ctx := context.Background()
 	err := cli.Parse(ctx, "cool")
 	is.NoErr(err)
@@ -890,7 +890,7 @@ func TestArgStringDefault(t *testing.T) {
 		return nil
 	})
 	var arg string
-	cli.Arg("arg").String(&arg).Default("default")
+	cli.Arg("arg", "arg string").String(&arg).Default("default")
 	ctx := context.Background()
 	err := cli.Parse(ctx)
 	is.NoErr(err)
@@ -909,7 +909,7 @@ func TestArgStringRequired(t *testing.T) {
 		return nil
 	})
 	var arg string
-	cli.Arg("arg").String(&arg)
+	cli.Arg("arg", "arg string").String(&arg)
 	ctx := context.Background()
 	err := cli.Parse(ctx)
 	is.True(err != nil)
@@ -928,7 +928,7 @@ func TestSubArgString(t *testing.T) {
 	var arg string
 	cli.Command("build", "build command")
 	cli.Command("run", "run command")
-	cli.Arg("arg").String(&arg)
+	cli.Arg("arg", "arg string").String(&arg)
 	ctx := context.Background()
 	err := cli.Parse(ctx, "deploy")
 	is.NoErr(err)
@@ -1009,7 +1009,7 @@ func TestArgsStrings(t *testing.T) {
 	var args []string
 	cli.Command("build", "build command")
 	cli.Command("run", "run command")
-	cli.Args("custom").Strings(&args)
+	cli.Args("custom", "custom strings").Strings(&args)
 	ctx := context.Background()
 	err := cli.Parse(ctx, "new", "view")
 	is.NoErr(err)
@@ -1156,7 +1156,7 @@ func TestArgsClearSlice(t *testing.T) {
 		return nil
 	})
 	args := []string{"a", "b"}
-	cli.Args("custom").Strings(&args)
+	cli.Args("custom", "custom strings").Strings(&args)
 	ctx := context.Background()
 	err := cli.Parse(ctx, "c", "d")
 	is.NoErr(err)
@@ -1177,7 +1177,7 @@ func TestArgClearMap(t *testing.T) {
 		return nil
 	})
 	args := map[string]string{"a": "a"}
-	cli.Arg("custom").StringMap(&args)
+	cli.Arg("custom", "custom string map").StringMap(&args)
 	ctx := context.Background()
 	err := cli.Parse(ctx, "b:b")
 	is.NoErr(err)
@@ -1513,7 +1513,7 @@ func TestArgOptionalString(t *testing.T) {
 	called := 0
 	cli := cli.New("cli", "cli command").Writer(actual)
 	var s *string
-	cli.Arg("s").Optional().String(&s)
+	cli.Arg("s", "string arg").Optional().String(&s)
 	cli.Run(func(ctx context.Context) error {
 		called++
 		return nil
@@ -1531,7 +1531,7 @@ func TestArgOptionalStringDefault(t *testing.T) {
 	called := 0
 	cli := cli.New("cli", "cli command").Writer(actual)
 	var s *string
-	cli.Arg("s").Optional().String(&s).Default("foo")
+	cli.Arg("s", "string arg").Optional().String(&s).Default("foo")
 	cli.Run(func(ctx context.Context) error {
 		called++
 		return nil
@@ -1549,7 +1549,7 @@ func TestArgOptionalStringNil(t *testing.T) {
 	called := 0
 	cli := cli.New("cli", "cli command").Writer(actual)
 	var s *string
-	cli.Arg("s").Optional().String(&s)
+	cli.Arg("s", "string arg").Optional().String(&s)
 	cli.Run(func(ctx context.Context) error {
 		called++
 		return nil
@@ -1567,7 +1567,7 @@ func TestArgOptionalBoolTrue(t *testing.T) {
 	called := 0
 	cli := cli.New("cli", "cli command").Writer(actual)
 	var b *bool
-	cli.Arg("b").Optional().Bool(&b)
+	cli.Arg("b", "bool arg").Optional().Bool(&b)
 	cli.Run(func(ctx context.Context) error {
 		called++
 		return nil
@@ -1585,7 +1585,7 @@ func TestArgOptionalBoolFalse(t *testing.T) {
 	called := 0
 	cli := cli.New("cli", "cli command").Writer(actual)
 	var b *bool
-	cli.Arg("b").Optional().Bool(&b)
+	cli.Arg("b", "bool arg").Optional().Bool(&b)
 	cli.Run(func(ctx context.Context) error {
 		called++
 		return nil
@@ -1603,7 +1603,7 @@ func TestArgOptionalBoolDefault(t *testing.T) {
 	called := 0
 	cli := cli.New("cli", "cli command").Writer(actual)
 	var b *bool
-	cli.Arg("b").Optional().Bool(&b).Default(true)
+	cli.Arg("b", "bool arg").Optional().Bool(&b).Default(true)
 	cli.Run(func(ctx context.Context) error {
 		called++
 		return nil
@@ -1621,7 +1621,7 @@ func TestArgOptionalBoolNil(t *testing.T) {
 	called := 0
 	cli := cli.New("cli", "cli command").Writer(actual)
 	var b *bool
-	cli.Arg("b").Optional().Bool(&b)
+	cli.Arg("b", "bool arg").Optional().Bool(&b)
 	cli.Run(func(ctx context.Context) error {
 		called++
 		return nil
@@ -1639,7 +1639,7 @@ func TestArgOptionalInt(t *testing.T) {
 	called := 0
 	cli := cli.New("cli", "cli command").Writer(actual)
 	var i *int
-	cli.Arg("i").Optional().Int(&i)
+	cli.Arg("i", "int arg").Optional().Int(&i)
 	cli.Run(func(ctx context.Context) error {
 		called++
 		return nil
@@ -1657,7 +1657,7 @@ func TestArgOptionalIntDefault(t *testing.T) {
 	called := 0
 	cli := cli.New("cli", "cli command").Writer(actual)
 	var i *int
-	cli.Arg("i").Optional().Int(&i).Default(1)
+	cli.Arg("i", "int arg").Optional().Int(&i).Default(1)
 	cli.Run(func(ctx context.Context) error {
 		called++
 		return nil
@@ -1675,7 +1675,7 @@ func TestArgOptionalIntNil(t *testing.T) {
 	called := 0
 	cli := cli.New("cli", "cli command").Writer(actual)
 	var i *int
-	cli.Arg("i").Optional().Int(&i)
+	cli.Arg("i", "int arg").Optional().Int(&i)
 	cli.Run(func(ctx context.Context) error {
 		called++
 		return nil
@@ -1747,7 +1747,7 @@ func TestArgsOptionalStrings(t *testing.T) {
 	called := 0
 	cli := cli.New("cli", "cli command").Writer(actual)
 	var s []string
-	cli.Args("s").Optional().Strings(&s)
+	cli.Args("s", "strings args").Optional().Strings(&s)
 	cli.Run(func(ctx context.Context) error {
 		called++
 		return nil
@@ -1765,7 +1765,7 @@ func TestArgsOptionalStringsDefault(t *testing.T) {
 	called := 0
 	cli := cli.New("cli", "cli command").Writer(actual)
 	var s []string
-	cli.Args("s").Optional().Strings(&s).Default("foo", "bar")
+	cli.Args("s", "strings args").Optional().Strings(&s).Default("foo", "bar")
 	cli.Run(func(ctx context.Context) error {
 		called++
 		return nil
@@ -1783,7 +1783,7 @@ func TestArgsOptionalStringsEmpty(t *testing.T) {
 	called := 0
 	cli := cli.New("cli", "cli command").Writer(actual)
 	var s []string
-	cli.Args("s").Optional().Strings(&s)
+	cli.Args("s", "strings args").Optional().Strings(&s)
 	cli.Run(func(ctx context.Context) error {
 		called++
 		return nil
@@ -1801,7 +1801,7 @@ func TestArgsRequiredStringsMissing(t *testing.T) {
 	called := 0
 	cli := cli.New("cli", "cli command").Writer(actual)
 	var s []string
-	cli.Args("strings").Strings(&s)
+	cli.Args("strings", "strings args").Strings(&s)
 	cli.Run(func(ctx context.Context) error {
 		called++
 		return nil
@@ -1824,7 +1824,7 @@ func TestUsageNestCommandArg(t *testing.T) {
 		cli := cli.Command("fs", "filesystem tools")
 		{
 			cli := cli.Command("cat", "cat a file")
-			cli.Arg("path").String(&path)
+			cli.Arg("path", "path string").String(&path)
 			cli.Run(func(ctx context.Context) error {
 				called++
 				return nil
@@ -1907,7 +1907,7 @@ func ExampleCLI() {
 	{ // new <dir>
 		cmd := &newCmd{}
 		cli := cli.Command("new", "create a new project")
-		cli.Arg("dir").String(&cmd.Dir)
+		cli.Arg("dir", "directory to scaffold in").String(&cmd.Dir)
 		cli.Run(cmd.Run)
 	}
 
@@ -2030,7 +2030,7 @@ func TestArgEnum(t *testing.T) {
 		return nil
 	})
 	var arg string
-	cli.Arg("arg").Enum(&arg, "a", "b", "c")
+	cli.Arg("arg", "enum arg").Enum(&arg, "a", "b", "c")
 	ctx := context.Background()
 	err := cli.Parse(ctx, "a")
 	is.NoErr(err)
@@ -2049,7 +2049,7 @@ func TestArgEnumDefault(t *testing.T) {
 		return nil
 	})
 	var arg string
-	cli.Arg("arg").Enum(&arg, "a", "b", "c").Default("b")
+	cli.Arg("arg", "enum arg").Enum(&arg, "a", "b", "c").Default("b")
 	ctx := context.Background()
 	err := cli.Parse(ctx)
 	is.NoErr(err)
@@ -2068,7 +2068,7 @@ func TestArgEnumRequired(t *testing.T) {
 		return nil
 	})
 	var arg string
-	cli.Arg("arg").Enum(&arg, "a", "b", "c")
+	cli.Arg("arg", "enum arg").Enum(&arg, "a", "b", "c")
 	ctx := context.Background()
 	err := cli.Parse(ctx)
 	is.True(err != nil)
@@ -2085,7 +2085,7 @@ func TestArgEnumInvalid(t *testing.T) {
 		return nil
 	})
 	var arg string
-	cli.Arg("arg").Enum(&arg, "a", "b", "c")
+	cli.Arg("arg", "enum arg").Enum(&arg, "a", "b", "c")
 	ctx := context.Background()
 	err := cli.Parse(ctx, "d")
 	is.True(err != nil)

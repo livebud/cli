@@ -10,8 +10,8 @@ import (
 type Command interface {
 	Command(name, help string) Command
 	Flag(name, help string) *Flag
-	Arg(name string) *Arg
-	Args(name string) *Args
+	Arg(name, help string) *Arg
+	Args(name, help string) *Args
 	Run(fn func(ctx context.Context) error)
 	Advanced() Command
 	Hidden() Command
@@ -61,14 +61,14 @@ func (c *subcommand) Flag(name, help string) *Flag {
 	return flag
 }
 
-func (c *subcommand) Arg(name string) *Arg {
-	arg := &Arg{name, nil}
+func (c *subcommand) Arg(name, help string) *Arg {
+	arg := &Arg{name, help, nil}
 	c.args = append(c.args, arg)
 	return arg
 }
 
-func (c *subcommand) Args(name string) *Args {
-	args := &Args{name, nil}
+func (c *subcommand) Args(name, help string) *Args {
+	args := &Args{name, help, nil}
 	c.restArgs = args
 	return args
 }
@@ -139,7 +139,7 @@ func (c *subcommand) parse(ctx context.Context, arguments []string) error {
 	}
 	// Also verify rest args if we have any
 	if c.restArgs != nil {
-		if err := c.restArgs.verify(c.restArgs.Name); err != nil {
+		if err := c.restArgs.verify(c.restArgs.name); err != nil {
 			return err
 		}
 	}

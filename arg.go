@@ -2,6 +2,7 @@ package cli
 
 type Arg struct {
 	name  string
+	help  string
 	value value
 }
 

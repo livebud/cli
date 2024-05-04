@@ -1,7 +1,8 @@
 package cli
 
 type Args struct {
-	Name  string
+	name  string
+	help  string
 	value value
 }
 
