@@ -1,3 +1,7 @@
+# 0.0.6 / 2024-05-04
+
+- add help message back in for args (not used yet)
+
 # 0.0.5 / 2024-05-04
 
 - add enum support
