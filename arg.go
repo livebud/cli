@@ -28,6 +28,12 @@ func (a *Arg) StringMap(target *map[string]string) *StringMap {
 	return value
 }
 
+func (a *Arg) Enum(target *string, possibilities ...string) *Enum {
+	value := &Enum{target: target}
+	a.value = &enumValue{inner: value, possibilities: possibilities}
+	return value
+}
+
 // Custom allows you to define a custom parsing function
 func (a *Arg) Custom(fn func(string) error) *Custom {
 	value := &Custom{target: fn}

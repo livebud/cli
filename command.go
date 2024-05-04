@@ -15,7 +15,6 @@ type Command interface {
 	Run(fn func(ctx context.Context) error)
 	Advanced() Command
 	Hidden() Command
-	Mount(mounter Mounter)
 }
 
 type subcommand struct {
@@ -86,14 +85,6 @@ func (c *subcommand) Advanced() Command {
 func (c *subcommand) Hidden() Command {
 	c.hidden = true
 	return c
-}
-
-type Mounter interface {
-	Mount(cmd Command)
-}
-
-func (c *subcommand) Mount(mounter Mounter) {
-	mounter.Mount(c)
 }
 
 func (c *subcommand) extract(fset *flag.FlagSet, arguments []string) (args []string, err error) {

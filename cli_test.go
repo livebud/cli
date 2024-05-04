@@ -428,6 +428,7 @@ func TestFlagStringRequired(t *testing.T) {
 	cli.Flag("flag", "cli flag").String(&flag)
 	ctx := context.Background()
 	err := cli.Parse(ctx)
+	is.True(err != nil)
 	is.Equal(err.Error(), "missing --flag")
 }
 
@@ -482,6 +483,7 @@ func TestFlagIntRequired(t *testing.T) {
 	cli.Flag("flag", "cli flag").Int(&flag)
 	ctx := context.Background()
 	err := cli.Parse(ctx)
+	is.True(err != nil)
 	is.Equal(err.Error(), "missing --flag")
 }
 
@@ -555,6 +557,7 @@ func TestFlagBoolRequired(t *testing.T) {
 	cli.Flag("flag", "cli flag").Bool(&flag)
 	ctx := context.Background()
 	err := cli.Parse(ctx)
+	is.True(err != nil)
 	is.Equal(err.Error(), "missing --flag")
 }
 
@@ -590,6 +593,7 @@ func TestFlagStringsRequired(t *testing.T) {
 	cli.Flag("flag", "cli flag").Strings(&flags)
 	ctx := context.Background()
 	err := cli.Parse(ctx)
+	is.True(err != nil)
 	is.Equal(err.Error(), "missing --flag")
 }
 
@@ -644,6 +648,7 @@ func TestFlagStringMapRequired(t *testing.T) {
 	cli.Flag("flag", "cli flag").StringMap(&flags)
 	ctx := context.Background()
 	err := cli.Parse(ctx)
+	is.True(err != nil)
 	is.Equal(err.Error(), "missing --flag")
 }
 
@@ -701,6 +706,7 @@ func TestArgStringMapRequired(t *testing.T) {
 	cli.Arg("arg").StringMap(&args)
 	ctx := context.Background()
 	err := cli.Parse(ctx)
+	is.True(err != nil)
 	is.Equal(err.Error(), "missing <arg>")
 }
 
@@ -906,6 +912,7 @@ func TestArgStringRequired(t *testing.T) {
 	cli.Arg("arg").String(&arg)
 	ctx := context.Background()
 	err := cli.Parse(ctx)
+	is.True(err != nil)
 	is.Equal(err.Error(), "missing <arg>")
 }
 
@@ -1802,6 +1809,7 @@ func TestArgsRequiredStringsMissing(t *testing.T) {
 	ctx := context.Background()
 	err := cli.Parse(ctx)
 	is.True(err != nil)
+	is.True(err != nil)
 	is.Equal(err.Error(), "missing <strings...>")
 	is.Equal(0, called)
 }
@@ -1874,35 +1882,212 @@ func TestHiddenCommandRunnable(t *testing.T) {
 	is.Equal(1, called)
 }
 
+type appCmd struct {
+	Chdir string
+	Embed bool
+}
+
+type newCmd struct {
+	Dir    string
+	Minify bool
+}
+
+// Run new
+func (c *newCmd) Run(ctx context.Context) error {
+	os.Stdout.WriteString("running new on " + c.Dir)
+	return nil
+}
+
 func ExampleCLI() {
-	flag := new(Flag)
+	cmd := &appCmd{}
 	cli := cli.New("app", "your awesome cli").Writer(os.Stderr)
-	cli.Flag("chdir", "change the dir").Short('C').String(&flag.Dir).Default(".")
-	cli.Flag("embed", "embed the code").Bool(&flag.Embed).Default(false)
+	cli.Flag("chdir", "change the dir").Short('C').String(&cmd.Chdir).Default(".")
+	cli.Flag("embed", "embed the code").Bool(&cmd.Embed).Default(false)
 
 	{ // new <dir>
-		cmd := &New{Flag: flag}
+		cmd := &newCmd{}
 		cli := cli.Command("new", "create a new project")
-		cli.Arg("dir").String(&cmd.Flag.Dir)
+		cli.Arg("dir").String(&cmd.Dir)
 		cli.Run(cmd.Run)
 	}
 
 	ctx := context.Background()
-	cli.Parse(ctx, "new", "-h")
+	cli.Parse(ctx, "new", ".")
 	// Output:
+	// running new on .
 }
 
-type Flag struct {
-	Dir   string
-	Embed bool
+func TestFlagsAnywhere(t *testing.T) {
+	t.Skip("not implemented yet")
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	var dir string
+	var src string
+	var path string
+	called := 0
+	cli := cli.New("bud", "bud cli").Writer(actual)
+	cli.Flag("chdir", "change the dir").Short('C').String(&dir).Default(".")
+	{
+		cli := cli.Command("fs", "filesystem tools")
+		cli.Flag("src", "source directory").String(&src)
+		{
+			cli := cli.Command("cat", "cat a file")
+			cli.Flag("path", "path to file").String(&path)
+			cli.Run(func(ctx context.Context) error {
+				called++
+				return nil
+			})
+		}
+	}
+	ctx := context.Background()
+	err := cli.Parse(ctx, "fs:cat", "-C", "cool", "--src='http://url.com'", "--path", "mypath")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(dir, "cool")
+	is.Equal(src, "http://url.com")
+	is.Equal(path, "mypath")
 }
 
-type New struct {
-	Flag *Flag
+func TestFlagEnum(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag string
+	cli.Flag("flag", "cli flag").Enum(&flag, "a", "b", "c")
+	ctx := context.Background()
+	err := cli.Parse(ctx, "--flag", "a")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(flag, "a")
+	isEqual(t, actual.String(), ``)
 }
 
-// Run new
-func (n *New) Run(ctx context.Context) error {
-	fmt.Println("running...")
-	return nil
+func TestFlagEnumDefault(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag string
+	cli.Flag("flag", "cli flag").Enum(&flag, "a", "b", "c").Default("b")
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(flag, "b")
+	isEqual(t, actual.String(), ``)
+}
+
+func TestFlagEnumRequired(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag string
+	cli.Flag("flag", "cli flag").Enum(&flag)
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.True(err != nil)
+	is.Equal(err.Error(), "missing --flag")
+}
+
+func TestFlagEnumInvalid(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag string
+	cli.Flag("flag", "cli flag").Enum(&flag, "a", "b", "c")
+	ctx := context.Background()
+	err := cli.Parse(ctx, "--flag", "d")
+	is.True(err != nil)
+	is.Equal(err.Error(), `--flag "d" must be one of: a, b, c`)
+}
+
+func TestArgEnum(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var arg string
+	cli.Arg("arg").Enum(&arg, "a", "b", "c")
+	ctx := context.Background()
+	err := cli.Parse(ctx, "a")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(arg, "a")
+	isEqual(t, actual.String(), ``)
+}
+
+func TestArgEnumDefault(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var arg string
+	cli.Arg("arg").Enum(&arg, "a", "b", "c").Default("b")
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(arg, "b")
+	isEqual(t, actual.String(), ``)
+}
+
+func TestArgEnumRequired(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var arg string
+	cli.Arg("arg").Enum(&arg, "a", "b", "c")
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.True(err != nil)
+	is.Equal(err.Error(), "missing <arg>")
+}
+
+func TestArgEnumInvalid(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var arg string
+	cli.Arg("arg").Enum(&arg, "a", "b", "c")
+	ctx := context.Background()
+	err := cli.Parse(ctx, "d")
+	is.True(err != nil)
+	is.Equal(err.Error(), `<arg> "d" must be one of: a, b, c`)
 }

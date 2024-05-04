@@ -35,6 +35,12 @@ func (f *Flag) Strings(target *[]string) *Strings {
 	return value
 }
 
+func (f *Flag) Enum(target *string, possibilities ...string) *Enum {
+	value := &Enum{target: target}
+	f.value = &enumValue{inner: value, possibilities: possibilities}
+	return value
+}
+
 func (f *Flag) StringMap(target *map[string]string) *StringMap {
 	*target = map[string]string{}
 	value := &StringMap{target: target}
