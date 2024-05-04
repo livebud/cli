@@ -15,4 +15,4 @@ release: test
 	@ git commit -am "Release v$(VERSION)"
 	@ git tag "v$(VERSION)"
 	@ git push origin main "v$(VERSION)"
-	@ go run github.com/cli/cli/v2/cmd/gh release create --generate-notes "v$(VERSION)"
+	@ go run github.com/cli/cli/v2/cmd/gh@latest release create --generate-notes "v$(VERSION)"
