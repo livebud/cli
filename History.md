@@ -1,3 +1,9 @@
+# 0.0.5 / 2024-05-04
+
+- add enum support
+- Remove unused add ability to infer flags and args from struct tags
+- Remove unused support calling multiple runners at once
+
 # 0.0.4 / 2023-10-22
 
 - update release script
