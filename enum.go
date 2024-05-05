@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -26,7 +27,17 @@ func (v *enumValue) check(displayName, val string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("%s %q must be one of: %s", displayName, val, strings.Join(v.possibilities, ", "))
+	s := new(strings.Builder)
+	lp := len(v.possibilities)
+	for i, p := range v.possibilities {
+		if i == lp-1 {
+			s.WriteString(" or ")
+		} else if i > 0 {
+			s.WriteString(", ")
+		}
+		s.WriteString(strconv.Quote(p))
+	}
+	return fmt.Errorf("%s %q must be either %s", displayName, val, s.String())
 }
 
 func (v *enumValue) verify(displayName string) error {

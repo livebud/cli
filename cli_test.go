@@ -2017,7 +2017,7 @@ func TestFlagEnumInvalid(t *testing.T) {
 	ctx := context.Background()
 	err := cli.Parse(ctx, "--flag", "d")
 	is.True(err != nil)
-	is.Equal(err.Error(), `--flag "d" must be one of: a, b, c`)
+	is.Equal(err.Error(), `--flag "d" must be either "a", "b" or "c"`)
 }
 
 func TestArgEnum(t *testing.T) {
@@ -2089,5 +2089,5 @@ func TestArgEnumInvalid(t *testing.T) {
 	ctx := context.Background()
 	err := cli.Parse(ctx, "d")
 	is.True(err != nil)
-	is.Equal(err.Error(), `<arg> "d" must be one of: a, b, c`)
+	is.Equal(err.Error(), `<arg> "d" must be either "a", "b" or "c"`)
 }
