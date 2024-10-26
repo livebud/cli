@@ -1,3 +1,9 @@
+# 0.0.8 / 2024-10-26
+
+- **BREAKING:** switch away from colon-based subcommands.
+  You can still use colon-based commands, you just use them as commands like `cli.Command("fs:cat", ...)` and don't nest.
+- add ability to find and modify commands
+
 # 0.0.7 / 2024-05-04
 
 - better error message for enums
