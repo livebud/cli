@@ -20,42 +20,74 @@ var usageTemplate string
 var defaultUsage = template.Must(template.New("usage").Funcs(colors).Parse(usageTemplate))
 
 type usage struct {
-	cmd  *subcommand
-	root *subcommand
+	cmd *subcommand
 }
 
 func (u *usage) Name() string {
-	return u.root.name
+	return u.cmd.name
+}
+
+func (u *usage) Full() string {
+	return u.cmd.full
 }
 
 func (u *usage) Usage() string {
 	out := new(strings.Builder)
-	out.WriteString(u.cmd.full)
-	if u.cmd.run == nil && len(u.cmd.commands) > 0 {
+	if len(u.cmd.flags) > 0 {
+		out.WriteString(" ")
 		out.WriteString(dim())
-		if u.cmd.full != "" {
-			out.WriteString(":")
-		}
-		out.WriteString("command")
+		out.WriteString("[flags]")
 		out.WriteString(reset())
 	}
-	if len(u.cmd.args) > 0 {
-		for i, arg := range u.cmd.args {
-			if i > 0 || u.cmd.full != "" {
-				out.WriteString(" ")
-			}
+	if u.cmd.run != nil && len(u.cmd.args) > 0 {
+		for _, arg := range u.cmd.args {
+			out.WriteString(" ")
 			out.WriteString(dim())
 			out.WriteString("<")
 			out.WriteString(arg.name)
 			out.WriteString(">")
 			out.WriteString(reset())
 		}
+	} else if len(u.cmd.commands) > 0 {
+		out.WriteString(" ")
+		out.WriteString(dim())
+		out.WriteString("[command]")
+		out.WriteString(reset())
 	}
 	return out.String()
 }
 
 func (u *usage) Description() string {
 	return u.cmd.help
+}
+
+func (u *usage) Args() (args usageArgs) {
+	for _, arg := range u.cmd.args {
+		args = append(args, &usageArg{arg})
+	}
+	return args
+}
+
+type usageArg struct {
+	a *Arg
+}
+
+type usageArgs []*usageArg
+
+func (args usageArgs) Usage() (string, error) {
+	buf := new(bytes.Buffer)
+	tw := tabwriter.NewWriter(buf, 0, 0, 2, ' ', 0)
+	for _, arg := range args {
+		tw.Write([]byte("\t\t<" + arg.a.name + ">"))
+		if arg.a.help != "" {
+			tw.Write([]byte("\t" + dim() + arg.a.help + reset()))
+		}
+		tw.Write([]byte("\n"))
+	}
+	if err := tw.Flush(); err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(buf.String()), nil
 }
 
 func (u *usage) Commands() (commands usageCommands) {
@@ -113,7 +145,7 @@ func (cmds usageCommands) Usage() (string, error) {
 	buf := new(bytes.Buffer)
 	tw := tabwriter.NewWriter(buf, 0, 0, 2, ' ', 0)
 	for _, cmd := range cmds {
-		tw.Write([]byte("\t\t" + cmd.c.full))
+		tw.Write([]byte("\t\t" + cmd.c.name))
 		if cmd.c.help != "" {
 			tw.Write([]byte("\t" + dim() + cmd.c.help + reset()))
 		}

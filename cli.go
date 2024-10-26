@@ -2,8 +2,9 @@ package cli
 
 import (
 	"context"
+	_ "embed"
 	"errors"
-	"flag"
+	"fmt"
 	"io"
 	"os"
 	"os/signal"
@@ -11,140 +12,100 @@ import (
 	"text/template"
 )
 
-var ErrCommandNotFound = errors.New("command not found")
+var ErrInvalidInput = errors.New("cli: invalid input")
+var ErrCommandNotFound = errors.New("cli: command not found")
 
-type value interface {
-	flag.Value
-	verify(displayName string) error
+type Command interface {
+	Command(name, help string) Command
+	Hidden() Command
+	Advanced() Command
+	Flag(name, help string) *Flag
+	Arg(name, help string) *Arg
+	Args(name, help string) *Args
+	Run(runner func(ctx context.Context) error)
 }
 
 func New(name, help string) *CLI {
-	return &CLI{
-		&subcommand{
-			nil,
-			name,
-			"",
-			help,
-			map[string]*subcommand{},
-			[]*Flag{},
-			[]*Arg{},
-			nil,
-			nil,
-			false,
-			false,
-		},
-		[]os.Signal{os.Interrupt},
-		defaultUsage,
-		os.Stdout,
-	}
+	config := &config{"", os.Stdout, defaultUsage, []os.Signal{os.Interrupt}}
+	return &CLI{newSubcommand(config, name, name, help), config}
 }
 
 type CLI struct {
-	*subcommand
-	signals []os.Signal
-	usage   *template.Template
-	writer  io.Writer
+	root   *subcommand
+	config *config
 }
 
 var _ Command = (*CLI)(nil)
 
-func (c *CLI) Writer(w io.Writer) *CLI {
-	c.writer = w
+type config struct {
+	version string
+	writer  io.Writer
+	usage   *template.Template
+	signals []os.Signal
+}
+
+func (c *CLI) Writer(writer io.Writer) *CLI {
+	c.config.writer = writer
 	return c
 }
 
-func (c *CLI) Usage(usage *template.Template) *CLI {
-	c.usage = usage
+func (c *CLI) Version(version string) *CLI {
+	c.config.version = version
 	return c
 }
 
-func (c *CLI) Signals(signals ...os.Signal) *CLI {
-	c.signals = signals
-	return c
+func (c *CLI) Template(template *template.Template) {
+	c.config.usage = template
 }
 
-type Parser interface {
-	Parse(ctx context.Context, args ...string) error
+func (c *CLI) Trap(signals ...os.Signal) {
+	c.config.signals = signals
 }
 
 func (c *CLI) Parse(ctx context.Context, args ...string) error {
-	// Setup the context
-	ctx = trap(ctx, c.signals...)
-	// Setup the flagset
-	fset := flag.NewFlagSet(c.name, flag.ContinueOnError)
-	fset.SetOutput(io.Discard)
-	// Load the root flags
-	for _, flag := range c.flags {
-		fset.Var(flag.value, flag.name, flag.help)
-		// Handle the short flag too
-		if flag.short != 0 {
-			fset.Var(flag.value, string(flag.short), flag.help)
-		}
-	}
-	// Parse the flags
-	if err := fset.Parse(args); err != nil {
-		// Print usage if the developer used -h or --help
-		if errors.Is(err, flag.ErrHelp) {
-			// Handle subcommand help messages
-			cmd := c.findOr(fset.Arg(0), c.subcommand)
-			return c.printUsage(cmd)
-		}
+	ctx = trap(ctx, c.config.signals...)
+	if err := c.root.parse(ctx, args); err != nil {
 		return err
 	}
-
-	// Find the subcommand
-	if cmd, ok := c.find(fset.Arg(0)); ok {
-		if err := cmd.parse(ctx, fset.Args()[1:]); err != nil {
-			if errors.Is(err, flag.ErrHelp) {
-				return c.printUsage(cmd)
-			}
-			return err
-		}
-		return nil
-	}
-
-	if err := c.parse(ctx, fset.Args()); err != nil {
-		if errors.Is(err, flag.ErrHelp) {
-			return c.printUsage(c.subcommand)
-		}
-		return err
-	}
-	return nil
+	// Give the caller a chance to handle context cancellations and therefore
+	// interrupts specifically.
+	return ctx.Err()
 }
 
-func (c *CLI) find(path string) (*subcommand, bool) {
-	if path == "" {
-		return nil, false
-	}
-	parts := strings.Split(path, ":")
-	cmd := c.subcommand
-	for _, part := range parts {
-		subcommand, ok := cmd.commands[part]
-		if !ok {
-			return nil, false
-		}
-		cmd = subcommand
-	}
-	return cmd, true
+func (c *CLI) Command(name, help string) Command {
+	return c.root.Command(name, help)
 }
 
-func (c *CLI) findOr(path string, fallback *subcommand) *subcommand {
-	cmd, ok := c.find(path)
+func (c *CLI) Hidden() Command {
+	return c.root.Hidden()
+}
+
+func (c *CLI) Advanced() Command {
+	return c.root.Advanced()
+}
+
+func (c *CLI) Flag(name, help string) *Flag {
+	return c.root.Flag(name, help)
+}
+
+func (c *CLI) Arg(name, help string) *Arg {
+	return c.root.Arg(name, help)
+}
+
+func (c *CLI) Args(name, help string) *Args {
+	return c.root.Args(name, help)
+}
+
+func (c *CLI) Run(runner func(ctx context.Context) error) {
+	c.root.Run(runner)
+}
+
+func (c *CLI) Find(subcommand ...string) (Command, error) {
+	sub, ok := c.root.Find(subcommand...)
 	if !ok {
-		return fallback
+		return nil, fmt.Errorf("%w: %s", ErrCommandNotFound, strings.Join(subcommand, " "))
 	}
-	return cmd
-}
-
-func getRoot(c *subcommand) *subcommand {
-	if c.parent == nil {
-		return c
-	}
-	return getRoot(c.parent)
-}
-
-func (c *CLI) printUsage(s *subcommand) error {
-	return c.usage.Execute(c.writer, &usage{s, getRoot(s)})
+	return sub, nil
 }
 
 func trap(parent context.Context, signals ...os.Signal) context.Context {

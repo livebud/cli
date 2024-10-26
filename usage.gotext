@@ -1,6 +1,6 @@
 
   {{bold}}Usage:{{reset}}
-    $ {{ $.Name }} {{- if $.Usage }} {{ $.Usage }}{{ end }}
+    {dim}${reset} {{ $.Full }} {{- if $.Usage }}{{ $.Usage }}{{ end }}
 
 {{- if $.Description}}
 
@@ -12,6 +12,12 @@
 
   {{bold}}Flags:{{reset}}
     {{ $.Flags.Usage }}
+{{- end }}
+
+{{- if $.Args }}
+
+  {{bold}}Args:{{reset}}
+    {{ $.Args.Usage }}
 {{- end }}
 
 {{- if $.Commands }}

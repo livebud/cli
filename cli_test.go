@@ -208,7 +208,7 @@ func TestHerokuHelp(t *testing.T) {
 	is.NoErr(err)
 	isEqual(t, actual.String(), `
   {bold}Usage:{reset}
-    $ heroku {dim}command{reset}
+    {dim}${reset} heroku {dim}[flags]{reset} {dim}[command]{reset}
 
   {bold}Description:{reset}
     CLI to interact with Heroku
@@ -233,7 +233,7 @@ func TestHerokuHelpPs(t *testing.T) {
 	is.NoErr(err)
 	isEqual(t, actual.String(), `
   {bold}Usage:{reset}
-    $ heroku ps
+    {dim}${reset} heroku ps {dim}[flags]{reset} {dim}[command]{reset}
 
   {bold}Description:{reset}
     list dynos for an app
@@ -244,8 +244,8 @@ func TestHerokuHelpPs(t *testing.T) {
     --json        {dim}output in json format{reset}
 
   {bold}Commands:{reset}
-    ps:autoscale  {dim}enable autoscaling for an app{reset}
-    ps:scale      {dim}scale dyno quantity up or down{reset}
+    autoscale  {dim}enable autoscaling for an app{reset}
+    scale      {dim}scale dyno quantity up or down{reset}
 
 `)
 }
@@ -255,18 +255,18 @@ func TestHerokuHelpPsAutoscale(t *testing.T) {
 	actual := new(bytes.Buffer)
 	cli := heroku(actual)
 	ctx := context.Background()
-	err := cli.Parse(ctx, "-h", "ps:autoscale")
+	err := cli.Parse(ctx, "ps", "autoscale", "-h")
 	is.NoErr(err)
 	isEqual(t, actual.String(), `
   {bold}Usage:{reset}
-    $ heroku ps:autoscale{dim}:command{reset}
+    {dim}${reset} heroku ps autoscale {dim}[command]{reset}
 
   {bold}Description:{reset}
     enable autoscaling for an app
 
   {bold}Commands:{reset}
-    ps:autoscale:disable  {dim}disable autoscaling for an app{reset}
-    ps:autoscale:enable   {dim}enable autoscaling for an app{reset}
+    disable  {dim}disable autoscaling for an app{reset}
+    enable   {dim}enable autoscaling for an app{reset}
 
 `)
 }
@@ -276,11 +276,11 @@ func TestHerokuHelpPsAutoscaleEnable(t *testing.T) {
 	actual := new(bytes.Buffer)
 	cli := heroku(actual)
 	ctx := context.Background()
-	err := cli.Parse(ctx, "-h", "ps:autoscale:enable")
+	err := cli.Parse(ctx, "ps", "autoscale", "enable", "-h")
 	is.NoErr(err)
 	isEqual(t, actual.String(), `
   {bold}Usage:{reset}
-    $ heroku ps:autoscale:enable
+    {dim}${reset} heroku ps autoscale enable {dim}[flags]{reset}
 
   {bold}Description:{reset}
     enable autoscaling for an app
@@ -305,29 +305,27 @@ func TestHerokuFlagArgOrder(t *testing.T) {
 	actual := new(bytes.Buffer)
 	cli := heroku(actual)
 	ctx := context.Background()
-	err := cli.Parse(ctx, "ps:scale", "--app=foo", "--remote", "bar", "web=1")
+	err := cli.Parse(ctx, "ps", "scale", "--app=foo", "--remote", "bar", "web=1")
 	is.NoErr(err)
 	is.Equal(actual.String(), `{"cmd":"ps:scale","in":{"App":"foo","Remote":"bar","Value":"web=1"}}`+"\n")
 }
 
-func TestHerokuArgFlagOrder(t *testing.T) {
+func TestHerokuInvalidArgFlagOrder(t *testing.T) {
 	is := is.New(t)
 	actual := new(bytes.Buffer)
-	cli := heroku(actual)
+	cmd := heroku(actual)
 	ctx := context.Background()
-	err := cli.Parse(ctx, "ps:scale", "web=1", "--app=foo", "--remote", "bar")
-	is.NoErr(err)
-	is.Equal(actual.String(), `{"cmd":"ps:scale","in":{"App":"foo","Remote":"bar","Value":"web=1"}}`+"\n")
+	err := cmd.Parse(ctx, "ps", "scale", "web=1", "--app=foo", "--remote", "bar")
+	is.True(errors.Is(err, cli.ErrInvalidInput))
 }
 
-func TestHerokuFlagArgFlagOrder(t *testing.T) {
+func TestHerokuInvalidFlagArgFlagOrderTwo(t *testing.T) {
 	is := is.New(t)
 	actual := new(bytes.Buffer)
-	cli := heroku(actual)
+	cmd := heroku(actual)
 	ctx := context.Background()
-	err := cli.Parse(ctx, "ps:scale", "--app=foo", "web=1", "--remote", "bar")
-	is.NoErr(err)
-	is.Equal(actual.String(), `{"cmd":"ps:scale","in":{"App":"foo","Remote":"bar","Value":"web=1"}}`+"\n")
+	err := cmd.Parse(ctx, "ps:scale", "--app=foo", "web=1", "--remote", "bar")
+	is.True(errors.Is(err, cli.ErrInvalidInput))
 }
 
 func TestHelpArgs(t *testing.T) {
@@ -342,10 +340,14 @@ func TestHelpArgs(t *testing.T) {
 	is.NoErr(err)
 	isEqual(t, actual.String(), `
   {bold}Usage:{reset}
-    $ cp {dim}<src>{reset} {dim}<dst>{reset}
+    {dim}${reset} cp {dim}<src>{reset} {dim}<dst>{reset}
 
   {bold}Description:{reset}
     copy files
+
+  {bold}Args:{reset}
+    <src>  {dim}source{reset}
+    <dst>  {dim}destination{reset}
 
 `)
 }
@@ -357,7 +359,7 @@ func TestInvalid(t *testing.T) {
 	ctx := context.Background()
 	err := cmd.Parse(ctx, "blargle")
 	is.True(err != nil)
-	is.True(errors.Is(err, cli.ErrCommandNotFound))
+	is.True(errors.Is(err, cli.ErrInvalidInput))
 	isEqual(t, actual.String(), ``)
 }
 
@@ -775,7 +777,7 @@ func TestSubHelp(t *testing.T) {
 	is.NoErr(err)
 	isEqual(t, actual.String(), `
   {bold}Usage:{reset}
-    $ bud {dim}command{reset}
+    {dim}${reset} bud {dim}[flags]{reset} {dim}[command]{reset}
 
   {bold}Description:{reset}
     bud CLI
@@ -801,7 +803,7 @@ func TestEmptyUsage(t *testing.T) {
 	is.NoErr(err)
 	isEqual(t, actual.String(), `
   {bold}Usage:{reset}
-    $ bud {dim}command{reset}
+    {dim}${reset} bud {dim}[flags]{reset} {dim}[command]{reset}
 
   {bold}Description:{reset}
     bud CLI
@@ -845,7 +847,7 @@ func TestSubHelpShort(t *testing.T) {
 	is.NoErr(err)
 	isEqual(t, actual.String(), `
   {bold}Usage:{reset}
-    $ bud
+    {dim}${reset} bud {dim}[flags]{reset} {dim}[command]{reset}
 
   {bold}Description:{reset}
     bud CLI
@@ -1034,7 +1036,7 @@ func TestUsageError(t *testing.T) {
 	is.NoErr(err)
 	isEqual(t, actual.String(), `
   {bold}Usage:{reset}
-    $ cli
+    {dim}${reset} cli
 
   {bold}Description:{reset}
     cli command
@@ -1113,7 +1115,7 @@ func TestManualHelpUsage(t *testing.T) {
 	is.Equal(called, 1)
 	isEqual(t, actual.String(), `
   {bold}Usage:{reset}
-    $ cli
+    {dim}${reset} cli {dim}[flags]{reset}
 
   {bold}Description:{reset}
     cli command
@@ -1832,14 +1834,17 @@ func TestUsageNestCommandArg(t *testing.T) {
 		}
 	}
 	ctx := context.Background()
-	err := cli.Parse(ctx, "fs:cat", "-h")
+	err := cli.Parse(ctx, "fs", "cat", "-h")
 	is.NoErr(err)
 	isEqual(t, actual.String(), `
   {bold}Usage:{reset}
-    $ bud fs:cat {dim}<path>{reset}
+    {dim}${reset} bud fs cat {dim}<path>{reset}
 
   {bold}Description:{reset}
     cat a file
+
+  {bold}Args:{reset}
+    <path>  {dim}path string{reset}
 
 `)
 }
@@ -1855,7 +1860,7 @@ func TestHiddenCommand(t *testing.T) {
 	is.NoErr(err)
 	isEqual(t, actual.String(), `
   {bold}Usage:{reset}
-    $ cli {dim}command{reset}
+    {dim}${reset} cli {dim}[command]{reset}
 
   {bold}Description:{reset}
     cli command
@@ -1880,6 +1885,31 @@ func TestHiddenCommandRunnable(t *testing.T) {
 	err := cli.Parse(ctx, "foo")
 	is.NoErr(err)
 	is.Equal(1, called)
+}
+
+func TestAdvancedCommand(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Command("foo", "foo command")
+	cli.Command("bar", "bar command").Advanced()
+	ctx := context.Background()
+	err := cli.Parse(ctx, "-h")
+	is.NoErr(err)
+	isEqual(t, actual.String(), `
+  {bold}Usage:{reset}
+    {dim}${reset} cli {dim}[command]{reset}
+
+  {bold}Description:{reset}
+    cli command
+
+  {bold}Commands:{reset}
+    foo  {dim}foo command{reset}
+
+  {bold}Advanced Commands:{reset}
+    bar  {dim}bar command{reset}
+
+`)
 }
 
 type appCmd struct {
@@ -2090,4 +2120,114 @@ func TestArgEnumInvalid(t *testing.T) {
 	err := cli.Parse(ctx, "d")
 	is.True(err != nil)
 	is.Equal(err.Error(), `<arg> "d" must be either "a", "b" or "c"`)
+}
+
+func TestColonBased(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	var dir string
+	var src string
+	var path string
+	called := 0
+	cli := cli.New("bud", "bud cli").Writer(actual)
+	cli.Flag("chdir", "change the dir").Short('C').String(&dir).Default(".")
+	{
+		cli := cli.Command("fs:cat", "cat a file")
+		cli.Flag("src", "source directory").String(&src)
+		cli.Flag("path", "path to file").String(&path)
+		cli.Run(func(ctx context.Context) error {
+			called++
+			return nil
+		})
+	}
+	{
+		cli := cli.Command("fs:list", "list a directory")
+		cli.Flag("src", "source directory").String(&src)
+		cli.Flag("path", "path to directory").String(&path)
+		cli.Run(func(ctx context.Context) error {
+			called++
+			return nil
+		})
+	}
+	ctx := context.Background()
+	err := cli.Parse(ctx, "-C", "cool", "fs:cat", "--src=http://url.com", "--path", "mypath")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(dir, "cool")
+	is.Equal(src, "http://url.com")
+	is.Equal(path, "mypath")
+	err = cli.Parse(ctx, "-C", "cool", "fs:list", "--src=http://url.com", "--path", "mypath")
+	is.NoErr(err)
+	is.Equal(2, called)
+	is.Equal(dir, "cool")
+	is.Equal(src, "http://url.com")
+	is.Equal(path, "mypath")
+}
+
+func TestFindAndChange(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	cli := cli.New("cli", "desc").Writer(actual)
+	called := []string{}
+	cmd := cli.Command("a", "a command")
+	cmd.Run(func(ctx context.Context) error {
+		called = append(called, "a")
+		return nil
+	})
+	cmd = cmd.Command("b", "b command")
+	cmd.Run(func(ctx context.Context) error {
+		called = append(called, "b1")
+		return nil
+	})
+	cmd, err := cli.Find("a")
+	is.NoErr(err)
+	cmd.Run(func(ctx context.Context) error {
+		called = append(called, "a2")
+		return nil
+	})
+
+	// Change a
+	cmd, err = cli.Find("a")
+	is.NoErr(err)
+	cmd.Run(func(ctx context.Context) error {
+		called = append(called, "a2")
+		return nil
+	})
+	ctx := context.Background()
+	called = []string{}
+	err = cli.Parse(ctx, "a")
+	is.NoErr(err)
+	is.Equal(called, []string{"a2"})
+
+	// Change a b
+	cmd, err = cli.Find("a", "b")
+	is.NoErr(err)
+	cmd.Run(func(ctx context.Context) error {
+		called = append(called, "b2")
+		return nil
+	})
+	called = []string{}
+	err = cli.Parse(ctx, "a", "b")
+	is.NoErr(err)
+	is.Equal(called, []string{"b2"})
+}
+
+func TestFindNotFound(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	app := cli.New("cli", "desc").Writer(actual)
+	called := []string{}
+	cmd := app.Command("a", "a command")
+	cmd.Run(func(ctx context.Context) error {
+		called = append(called, "a")
+		return nil
+	})
+	cmd = app.Command("b", "b command")
+	cmd.Run(func(ctx context.Context) error {
+		called = append(called, "b1")
+		return nil
+	})
+	cmd, err := app.Find("a", "c")
+	is.True(errors.Is(err, cli.ErrCommandNotFound))
+	is.Equal(cmd, nil)
 }
