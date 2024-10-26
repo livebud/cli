@@ -1,3 +1,7 @@
+# 0.0.9 / 2024-10-26
+
+- support basic tab completion using `COMP_LINE` and `complete -o nospace -C <cmd> <cmd>`
+
 # 0.0.8 / 2024-10-26
 
 - **BREAKING:** switch away from colon-based subcommands.
