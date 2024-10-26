@@ -63,7 +63,13 @@ func (c *CLI) Trap(signals ...os.Signal) {
 }
 
 func (c *CLI) Parse(ctx context.Context, args ...string) error {
+	// Trap signals if any were provided
 	ctx = trap(ctx, c.config.signals...)
+	// Support basic tab completion
+	if compline := os.Getenv("COMP_LINE"); compline != "" {
+		return c.complete(compline)
+	}
+	// Parse the command line arguments
 	if err := c.root.parse(ctx, args); err != nil {
 		return err
 	}
@@ -101,11 +107,31 @@ func (c *CLI) Run(runner func(ctx context.Context) error) {
 }
 
 func (c *CLI) Find(subcommand ...string) (Command, error) {
+	return c.find(subcommand...)
+}
+
+func (c *CLI) find(subcommand ...string) (*subcommand, error) {
 	sub, ok := c.root.Find(subcommand...)
 	if !ok {
 		return nil, fmt.Errorf("%w: %s", ErrCommandNotFound, strings.Join(subcommand, " "))
 	}
 	return sub, nil
+}
+
+func (c *CLI) complete(compline string) error {
+	fields := strings.Fields(compline)
+	cmd, err := c.find(fields[1:]...)
+	if err != nil {
+		// If the command wasn't found, don't print anything
+		return nil
+	}
+	for _, cmd := range cmd.commands {
+		if cmd.hidden {
+			continue
+		}
+		c.config.writer.Write([]byte(cmd.name + "\n"))
+	}
+	return nil
 }
 
 func trap(parent context.Context, signals ...os.Signal) context.Context {

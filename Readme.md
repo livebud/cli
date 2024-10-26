@@ -12,9 +12,10 @@ Build beautiful CLIs in Go. A simpler alternative to [kingpin](https://github.co
 - Flag, command and argument support
 - Required and optional parameters
 - Built entirely on the [flag](https://pkg.go.dev/flag) package the standard library
-- Colon-based subcommands (e.g. `new:controller`)
+- Supports both space-based and colon-based subcommands (e.g. `controller new` & `controller:new`)
 - `SIGINT` context cancellation out-of-the-box
 - Custom help messages
+- Built-in tab completion with `complete -o nospace -C <cmd> <cmd>`
 - Respects `NO_COLOR`
 
 ## Install
