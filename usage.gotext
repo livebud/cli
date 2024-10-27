@@ -1,6 +1,6 @@
 
   {{bold}}Usage:{{reset}}
-    {dim}${reset} {{ $.Full }} {{- if $.Usage }}{{ $.Usage }}{{ end }}
+    {{dim}}${{reset}} {{ $.Full }} {{- if $.Usage }}{{ $.Usage }}{{ end }}
 
 {{- if $.Description}}
 
