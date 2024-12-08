@@ -69,48 +69,42 @@ func heroku(w io.Writer) *cli.CLI {
 		App    string
 		Remote *string
 	}
-	var in global
+	var g global
 	cli := cli.New("heroku", `CLI to interact with Heroku`).Writer(w)
-	cli.Flag("app", "app to run command against").Short('a').String(&in.App)
-	cli.Flag("remote", "git remote of app to use").Short('r').Optional().String(&in.Remote)
+	cli.Flag("app", "app to run command against").Short('a').String(&g.App)
+	cli.Flag("remote", "git remote of app to use").Short('r').Optional().String(&g.Remote)
 
 	{
-		var in struct {
-			global
+		var in = struct {
+			*global
 			All  bool
 			Json bool
-		}
+		}{global: &g}
 		cli := cli.Command("addons", `lists your add-ons and attachments`)
-		cli.Flag("app", "app to run command against").Short('a').String(&in.App)
-		cli.Flag("remote", "git remote of app to use").Short('r').Optional().String(&in.Remote)
 		cli.Flag("all", "show add-ons and attachments for all accessible apps").Bool(&in.All).Default(false)
 		cli.Flag("json", "return add-ons in json format").Bool(&in.Json).Default(false)
 		cli.Run(func(ctx context.Context) error { return encode(w, "addons", in) })
 
 		{
-			var in struct {
-				global
+			var in = struct {
+				*global
 				Name *string
 				As   *string
-			}
+			}{global: &g}
 			cli := cli.Command("attach", `attach an existing add-on resource to an app`)
-			cli.Flag("app", "app to run command against").Short('a').String(&in.App)
-			cli.Flag("remote", "git remote of app to use").Short('r').Optional().String(&in.Remote)
 			cli.Flag("name", "name for the add-on resource").Optional().String(&in.Name)
 			cli.Flag("as", "name for add-on attachment").Optional().String(&in.As)
 			cli.Run(func(ctx context.Context) error { return encode(w, "addons:attach", in) })
 		}
 
 		{
-			var in struct {
-				global
+			var in = struct {
+				*global
 				Name *string
 				As   *string
 				Wait bool
-			}
+			}{global: &g}
 			cli := cli.Command("create", `create a new add-on resource and attach to an app`)
-			cli.Flag("app", "app to run command against").Short('a').String(&in.App)
-			cli.Flag("remote", "git remote of app to use").Short('r').Optional().String(&in.Remote)
 			cli.Flag("name", "name for the add-on resource").Optional().String(&in.Name)
 			cli.Flag("as", "name for add-on attachment").Optional().String(&in.As)
 			cli.Flag("wait", "watch add-on creation status and exit when complete").Bool(&in.Wait).Default(false)
@@ -118,65 +112,57 @@ func heroku(w io.Writer) *cli.CLI {
 		}
 
 		{
-			var in struct {
+			var in = struct {
 				global
 				Force bool
-			}
+			}{global: g}
 			cli := cli.Command("destroy", `destroy permanently destroys an add-on resource`)
-			cli.Flag("app", "app to run command against").Short('a').String(&in.App)
-			cli.Flag("remote", "git remote of app to use").Short('r').Optional().String(&in.Remote)
 			cli.Flag("force", "force destroy").Bool(&in.Force).Default(false)
 			cli.Run(func(ctx context.Context) error { return encode(w, "addons:destroy", in) })
 		}
 
 		{
-			var in struct {
-				global
-			}
+			var in = struct {
+				*global
+			}{global: &g}
 			cli := cli.Command("info", `show detailed information for an add-on`)
-			cli.Flag("app", "app to run command against").Short('a').String(&in.App)
-			cli.Flag("remote", "git remote of app to use").Short('r').Optional().String(&in.Remote)
 			cli.Run(func(ctx context.Context) error { return encode(w, "addons:info", in) })
 		}
 	}
 
 	{
-		var in struct {
-			global
+		var in = struct {
+			*global
 			Json bool
-		}
+		}{global: &g}
 		cli := cli.Command("ps", `list dynos for an app`)
-		cli.Flag("app", "app to run command against").Short('a').String(&in.App)
-		cli.Flag("remote", "git remote of app to use").Short('r').Optional().String(&in.Remote)
 		cli.Flag("json", "output in json format").Bool(&in.Json).Default(false)
 		cli.Run(func(ctx context.Context) error { return encode(w, "ps", in) })
 
 		{
-			var in struct {
-				global
+			var in = struct {
+				*global
 				Value string
-			}
+			}{global: &g}
 			cli := cli.Command("scale", `scale dyno quantity up or down`)
-			cli.Flag("app", "app to run command against").Short('a').String(&in.App)
-			cli.Flag("remote", "git remote of app to use").Short('r').Optional().String(&in.Remote)
 			cli.Arg("value", "some value").String(&in.Value)
-			cli.Run(func(ctx context.Context) error { return encode(w, "ps:scale", in) })
+			cli.Run(func(ctx context.Context) error {
+				return encode(w, "ps:scale", in)
+			})
 		}
 
 		{
 			cli := cli.Command("autoscale", `enable autoscaling for an app`)
 
 			{
-				var in struct {
-					global
+				var in = struct {
+					*global
 					Min           int
 					Max           int
 					Notifications bool
 					P95           int
-				}
+				}{global: &g}
 				cli := cli.Command("enable", `enable autoscaling for an app`)
-				cli.Flag("app", "app to run command against").Short('a').String(&in.App)
-				cli.Flag("remote", "git remote of app to use").Short('r').Optional().String(&in.Remote)
 				cli.Flag("min", "minimum number of dynos").Int(&in.Min)
 				cli.Flag("max", "maximum number of dynos").Int(&in.Max)
 				cli.Flag("notifications", "comma-separated list of notifications to enable").Bool(&in.Notifications)
@@ -185,12 +171,10 @@ func heroku(w io.Writer) *cli.CLI {
 			}
 
 			{
-				var in struct {
-					global
-				}
+				var in = struct {
+					*global
+				}{global: &g}
 				cli := cli.Command("disable", `disable autoscaling for an app`)
-				cli.Flag("app", "app to run command against").Short('a').String(&in.App)
-				cli.Flag("remote", "git remote of app to use").Short('r').Optional().String(&in.Remote)
 				cli.Run(func(ctx context.Context) error { return encode(w, "ps:autoscale:disable", in) })
 			}
 		}
@@ -259,10 +243,15 @@ func TestHerokuHelpPsAutoscale(t *testing.T) {
 	is.NoErr(err)
 	isEqual(t, actual.String(), `
   {bold}Usage:{reset}
-    {dim}${reset} heroku ps autoscale {dim}[command]{reset}
+    {dim}${reset} heroku ps autoscale {dim}[flags]{reset} {dim}[command]{reset}
 
   {bold}Description:{reset}
     enable autoscaling for an app
+
+  {bold}Flags:{reset}
+    -a, --app     {dim}app to run command against{reset}
+    -r, --remote  {dim}git remote of app to use{reset}
+    --json        {dim}output in json format{reset}
 
   {bold}Commands:{reset}
     disable  {dim}disable autoscaling for an app{reset}
@@ -288,6 +277,7 @@ func TestHerokuHelpPsAutoscaleEnable(t *testing.T) {
   {bold}Flags:{reset}
     -a, --app        {dim}app to run command against{reset}
     -r, --remote     {dim}git remote of app to use{reset}
+    --json           {dim}output in json format{reset}
     --max            {dim}maximum number of dynos{reset}
     --min            {dim}minimum number of dynos{reset}
     --notifications  {dim}comma-separated list of notifications to enable{reset}
@@ -310,13 +300,14 @@ func TestHerokuFlagArgOrder(t *testing.T) {
 	is.Equal(actual.String(), `{"cmd":"ps:scale","in":{"App":"foo","Remote":"bar","Value":"web=1"}}`+"\n")
 }
 
-func TestHerokuInvalidArgFlagOrder(t *testing.T) {
+func TestHerokuArgFlagOutOfOrder(t *testing.T) {
 	is := is.New(t)
 	actual := new(bytes.Buffer)
 	cmd := heroku(actual)
 	ctx := context.Background()
 	err := cmd.Parse(ctx, "ps", "scale", "web=1", "--app=foo", "--remote", "bar")
-	is.True(errors.Is(err, cli.ErrInvalidInput))
+	is.NoErr(err)
+	is.Equal(actual.String(), `{"cmd":"ps:scale","in":{"App":"foo","Remote":"bar","Value":"web=1"}}`+"\n")
 }
 
 func TestHerokuInvalidFlagArgFlagOrderTwo(t *testing.T) {
@@ -1948,7 +1939,6 @@ func ExampleCLI() {
 }
 
 func TestFlagsAnywhere(t *testing.T) {
-	t.Skip("not implemented yet")
 	is := is.New(t)
 	actual := new(bytes.Buffer)
 	var dir string
@@ -1970,12 +1960,40 @@ func TestFlagsAnywhere(t *testing.T) {
 		}
 	}
 	ctx := context.Background()
-	err := cli.Parse(ctx, "fs:cat", "-C", "cool", "--src='http://url.com'", "--path", "mypath")
+	err := cli.Parse(ctx, "fs", "cat", "-C", "cool", "--src", "http://url.com", "--path", "mypath")
 	is.NoErr(err)
 	is.Equal(1, called)
 	is.Equal(dir, "cool")
 	is.Equal(src, "http://url.com")
 	is.Equal(path, "mypath")
+}
+
+func TestUnexpectedArg(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	var dir string
+	var src string
+	var path string
+	called := 0
+	cmd := cli.New("bud", "bud cli").Writer(actual)
+	cmd.Flag("chdir", "change the dir").Short('C').String(&dir).Default(".")
+	{
+		cmd := cmd.Command("fs", "filesystem tools")
+		cmd.Flag("src", "source directory").String(&src)
+		{
+			cmd := cmd.Command("cat", "cat a file")
+			cmd.Flag("path", "path to file").String(&path)
+			cmd.Run(func(ctx context.Context) error {
+				called++
+				return nil
+			})
+		}
+	}
+	ctx := context.Background()
+	err := cmd.Parse(ctx, "fs:cat", "-C", "cool", "--src", "http://url.com", "--path", "mypath")
+	is.True(err != nil)
+	is.True(errors.Is(err, cli.ErrInvalidInput))
+	is.Equal(err.Error(), `cli: invalid input with unxpected arg "fs:cat"`)
 }
 
 func TestFlagEnum(t *testing.T) {
@@ -2230,4 +2248,87 @@ func TestFindNotFound(t *testing.T) {
 	cmd, err := app.Find("a", "c")
 	is.True(errors.Is(err, cli.ErrCommandNotFound))
 	is.Equal(cmd, nil)
+}
+
+func TestOutOfOrderFlags(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	var dir string
+	var src string
+	var path string
+	var sync bool
+	called := 0
+	cli := cli.New("bud", "bud cli").Writer(actual)
+	cli.Flag("chdir", "change the dir").Short('C').String(&dir).Default(".")
+	{
+		cli := cli.Command("fs:cat", "cat a file")
+		cli.Flag("src", "source directory").String(&src)
+		cli.Flag("path", "path to file").String(&path)
+		cli.Run(func(ctx context.Context) error {
+			called++
+			return nil
+		})
+	}
+	{
+		cli := cli.Command("fs:list", "list a directory")
+		cli.Flag("src", "source directory").String(&src)
+		cli.Flag("path", "path to directory").String(&path)
+		cli.Run(func(ctx context.Context) error {
+			called++
+			return nil
+		})
+	}
+	{
+		cli := cli.Command("fs:cp", "cp a directory")
+		cli.Arg("from", "from directory").String(&src)
+		cli.Arg("to", "to directory").String(&path)
+		cli.Flag("sync", "sync the directory").Bool(&sync)
+		cli.Run(func(ctx context.Context) error {
+			called++
+			return nil
+		})
+	}
+	ctx := context.Background()
+	err := cli.Parse(ctx, "fs:cat", "--src=http://url.com", "--path", "mypath", "-C", "cool")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(dir, "cool")
+	is.Equal(src, "http://url.com")
+	is.Equal(path, "mypath")
+	err = cli.Parse(ctx, "fs:list", "--src=http://url.com", "-C", "cool", "--path", "mypath")
+	is.NoErr(err)
+	is.Equal(2, called)
+	is.Equal(dir, "cool")
+	is.Equal(src, "http://url.com")
+	is.Equal(path, "mypath")
+	err = cli.Parse(ctx, "fs:cp", "some-from", "some-to", "-C", "cool", "--sync")
+	is.NoErr(err)
+	is.Equal(3, called)
+	is.Equal(src, "some-from")
+	is.Equal(path, "some-to")
+	is.Equal(dir, "cool")
+	is.Equal(sync, true)
+}
+
+func TestFlagsConflictPanic(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	var chdir string
+	var copy bool
+	called := 0
+
+	cli := cli.New("bud", "bud cli").Writer(actual)
+	cli.Flag("chdir", "change the dir").Short('C').String(&chdir).Default(".")
+
+	cmd := cli.Command("sub", "subcommand")
+	cmd.Flag("copy", "copy flag").Short('C').Bool(&copy)
+	cmd.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+
+	ctx := context.Background()
+	err := cli.Parse(ctx, "-C", "dir", "sub", "--copy")
+	is.True(err != nil)
+	is.Equal(err.Error(), `cli: invalid input "bud sub" command contains a duplicate flag "-C"`)
 }

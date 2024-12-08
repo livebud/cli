@@ -3,12 +3,12 @@ package cli
 type Flag struct {
 	name  string
 	help  string
-	short byte
+	short string
 	value value
 }
 
 func (f *Flag) Short(short byte) *Flag {
-	f.short = short
+	f.short = string(short)
 	return f
 }
 

@@ -6,9 +6,10 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"strings"
 )
 
-func newSubcommand(config *config, name, full, help string) *subcommand {
+func newSubcommand(config *config, flags []*Flag, name, full, help string) *subcommand {
 	fset := flag.NewFlagSet(name, flag.ContinueOnError)
 	fset.SetOutput(io.Discard)
 	return &subcommand{
@@ -16,6 +17,7 @@ func newSubcommand(config *config, name, full, help string) *subcommand {
 		fset:     fset,
 		name:     name,
 		full:     full,
+		flags:    flags,
 		help:     help,
 		commands: map[string]*subcommand{},
 	}
@@ -51,22 +53,34 @@ type value interface {
 }
 
 // Set flags only once
-func (c *subcommand) setFlags() {
+func (c *subcommand) setFlags() error {
 	if c.parsed {
-		return
+		return nil
 	}
 	c.parsed = true
+	seen := map[string]bool{}
 	for _, flag := range c.flags {
+		if seen[flag.name] {
+			return fmt.Errorf("%w %q command contains a duplicate flag \"--%s\"", ErrInvalidInput, c.full, flag.name)
+		}
+		seen[flag.name] = true
 		c.fset.Var(flag.value, flag.name, flag.help)
-		if flag.short != 0 {
-			c.fset.Var(flag.value, string(flag.short), flag.help)
+		if flag.short != "" {
+			if seen[flag.short] {
+				return fmt.Errorf("%w %q command contains a duplicate flag \"-%s\"", ErrInvalidInput, c.full, flag.short)
+			}
+			seen[flag.short] = true
+			c.fset.Var(flag.value, flag.short, flag.help)
 		}
 	}
+	return nil
 }
 
 func (c *subcommand) parse(ctx context.Context, args []string) error {
 	// Set flags
-	c.setFlags()
+	if err := c.setFlags(); err != nil {
+		return err
+	}
 	// Parse the arguments
 	if err := c.fset.Parse(args); err != nil {
 		// Print usage if the developer used -h or --help
@@ -82,6 +96,19 @@ func (c *subcommand) parse(ctx context.Context, args []string) error {
 	// Handle the remaining arguments
 	numArgs := len(c.args)
 	restArgs := c.fset.Args()
+
+	// restArgs will start with an arg, so before parsing flags, check that the
+	// command can handle additional args
+	if len(restArgs) > 0 && len(c.args) == 0 && c.restArgs == nil {
+		return fmt.Errorf("%w with unxpected arg %q", ErrInvalidInput, restArgs[0])
+	}
+
+	// Also parse the flags after an arg
+	restArgs, err := parseFlags(c.fset, restArgs)
+	if err != nil {
+		return err
+	}
+
 loop:
 	for i, arg := range restArgs {
 		if i >= numArgs {
@@ -89,8 +116,10 @@ loop:
 				return fmt.Errorf("%w: %s", ErrInvalidInput, arg)
 			}
 			// Loop over the remaining unset args, appending them to restArgs
-			for _, arg := range restArgs[i:] {
-				c.restArgs.value.Set(arg)
+			if c.restArgs != nil {
+				for _, arg := range restArgs[i:] {
+					c.restArgs.value.Set(arg)
+				}
 			}
 			break loop
 		}
@@ -137,7 +166,7 @@ func (c *subcommand) Command(name, help string) Command {
 	if c.commands[name] != nil {
 		return c.commands[name]
 	}
-	cmd := newSubcommand(c.config, name, c.full+" "+name, help)
+	cmd := newSubcommand(c.config, c.flags, name, c.full+" "+name, help)
 	c.commands[name] = cmd
 	return cmd
 }
@@ -194,4 +223,23 @@ func (c *subcommand) Find(cmds ...string) (*subcommand, bool) {
 		return nil, false
 	}
 	return sub.Find(cmds[1:]...)
+}
+
+func parseFlags(fset *flag.FlagSet, args []string) (rest []string, err error) {
+	for i, arg := range args {
+		if !strings.HasPrefix(arg, "-") {
+			rest = append(rest, arg)
+			continue
+		}
+		if err := fset.Parse(args[i:]); err != nil {
+			return nil, err
+		}
+		remaining, err := parseFlags(fset, fset.Args())
+		if err != nil {
+			return nil, err
+		}
+		rest = append(rest, remaining...)
+		return rest, nil
+	}
+	return rest, nil
 }

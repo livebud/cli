@@ -168,7 +168,7 @@ func (flags usageFlags) Usage() (string, error) {
 	tw := tabwriter.NewWriter(buf, 0, 0, 2, ' ', 0)
 	for _, flag := range flags {
 		tw.Write([]byte("\t\t"))
-		if flag.f.short != 0 {
+		if flag.f.short != "" {
 			tw.Write([]byte("-" + string(flag.f.short) + ", "))
 		}
 		tw.Write([]byte("--" + flag.f.name))
@@ -185,5 +185,5 @@ func (flags usageFlags) Usage() (string, error) {
 }
 
 func hasShort(flag *usageFlag) bool {
-	return flag.f.short != 0
+	return flag.f.short != ""
 }

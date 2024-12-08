@@ -27,7 +27,7 @@ type Command interface {
 
 func New(name, help string) *CLI {
 	config := &config{"", os.Stdout, defaultUsage, []os.Signal{os.Interrupt}}
-	return &CLI{newSubcommand(config, name, name, help), config}
+	return &CLI{newSubcommand(config, []*Flag{}, name, name, help), config}
 }
 
 type CLI struct {
