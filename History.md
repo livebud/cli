@@ -1,3 +1,7 @@
+# 0.0.11 / 2024-12-07
+
+- support passing flags out of order
+
 # 0.0.10 / 2024-10-26
 
 - fix help message coloring
