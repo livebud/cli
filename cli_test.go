@@ -2332,3 +2332,47 @@ func TestFlagsConflictPanic(t *testing.T) {
 	is.True(err != nil)
 	is.Equal(err.Error(), `cli: invalid input "bud sub" command contains a duplicate flag "-C"`)
 }
+
+func TestFlagCopy(t *testing.T) {
+	is := is.New(t)
+	ctx := context.Background()
+	dir := ""
+	log := ""
+	limit := ""
+	key := ""
+	revision := ""
+
+	actual := new(bytes.Buffer)
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Flag("dir", "dir").String(&dir).Default(".")
+	cli.Flag("log", "log level").Enum(&log, "debug", "info", "warn", "error").Default("info")
+	cli.Flag("limit-memory", "limit memory").String(&limit).Default("")
+
+	{ // logs
+		cmd := cli.Command("logs", "show logs for an app")
+		cmd.Flag("revision", "revision to log").Short('r').String(&revision).Default("latest")
+	}
+
+	{ // postinstall
+		cmd := cli.Command("postinstall", "post install script").Hidden()
+		cmd.Flag("public-key", "public key").String(&key)
+	}
+
+	{ // check
+		cmd := cli.Command("check", "run healthchecks")
+		cmd.Flag("revision", "revision to check").Short('r').String(&revision).Default("latest")
+	}
+
+	// Ensure postinstall doesn't have revision
+	is.NoErr(cli.Parse(ctx, "postinstall", "-h"))
+	is.True(strings.Contains(actual.String(), "public-key"))
+	is.True(!strings.Contains(actual.String(), "revision"))
+
+	// Reset the buffer
+	actual.Reset()
+
+	// Ensure check doesn't have public-key
+	is.NoErr(cli.Parse(ctx, "check", "-h"))
+	is.True(strings.Contains(actual.String(), "revision"))
+	is.True(!strings.Contains(actual.String(), "public-key"))
+}

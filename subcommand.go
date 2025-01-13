@@ -166,7 +166,10 @@ func (c *subcommand) Command(name, help string) Command {
 	if c.commands[name] != nil {
 		return c.commands[name]
 	}
-	cmd := newSubcommand(c.config, c.flags, name, c.full+" "+name, help)
+	// Copy the flags from the parent command
+	flags := append([]*Flag{}, c.flags...)
+	// Create the subcommand
+	cmd := newSubcommand(c.config, flags, name, c.full+" "+name, help)
 	c.commands[name] = cmd
 	return cmd
 }
