@@ -1,3 +1,7 @@
+# 0.0.12 / 2025-01-12
+
+- fix bug where flags were sometimes getting shared on subcommands
+
 # 0.0.11 / 2024-12-07
 
 - support passing flags out of order
