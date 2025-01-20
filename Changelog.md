@@ -1,3 +1,7 @@
+# 0.0.14 / 2025-01-20
+
+- better empty default values for string arrays and maps
+
 # 0.0.13 / 2025-01-20
 
 - add support for using environment variables
