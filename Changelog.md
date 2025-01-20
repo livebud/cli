@@ -1,3 +1,9 @@
+# 0.0.13 / 2025-01-20
+
+- add support for using environment variables
+- usage now shows defaults and optionals
+- better error messages for args.
+
 # 0.0.12 / 2025-01-12
 
 - fix bug where flags were sometimes getting shared on subcommands
