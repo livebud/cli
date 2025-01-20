@@ -7,6 +7,10 @@ type Flag struct {
 	value value
 }
 
+func (f *Flag) key() string {
+	return "--" + f.name
+}
+
 func (f *Flag) Short(short byte) *Flag {
 	f.short = string(short)
 	return f
@@ -18,79 +22,89 @@ func (f *Flag) Optional() *OptionalFlag {
 
 func (f *Flag) Int(target *int) *Int {
 	value := &Int{target: target}
-	f.value = &intValue{inner: value}
+	f.value = &intValue{key: f.key(), inner: value}
 	return value
 }
 
 func (f *Flag) String(target *string) *String {
 	value := &String{target: target}
-	f.value = &stringValue{inner: value}
+	f.value = &stringValue{key: f.key(), inner: value}
 	return value
 }
 
 func (f *Flag) Strings(target *[]string) *Strings {
 	*target = []string{}
 	value := &Strings{target: target}
-	f.value = &stringsValue{inner: value}
+	f.value = &stringsValue{key: f.key(), inner: value}
 	return value
 }
 
 func (f *Flag) Enum(target *string, possibilities ...string) *Enum {
 	value := &Enum{target: target}
-	f.value = &enumValue{inner: value, possibilities: possibilities}
+	f.value = &enumValue{key: f.key(), inner: value, possibilities: possibilities}
 	return value
 }
 
 func (f *Flag) StringMap(target *map[string]string) *StringMap {
 	*target = map[string]string{}
 	value := &StringMap{target: target}
-	f.value = &stringMapValue{inner: value}
+	f.value = &stringMapValue{key: f.key(), inner: value}
 	return value
 }
 
 func (f *Flag) Bool(target *bool) *Bool {
 	value := &Bool{target: target}
-	f.value = &boolValue{inner: value}
+	f.value = &boolValue{key: f.key(), inner: value}
 	return value
 }
 
 // Custom allows you to define a custom parsing function
 func (f *Flag) Custom(fn func(string) error) *Custom {
 	value := &Custom{target: fn}
-	f.value = &customValue{inner: value}
+	f.value = &customValue{key: f.key(), inner: value}
 	return value
 }
 
 func (f *Flag) verify(name string) error {
-	return f.value.verify("--" + name)
+	return f.value.verify()
 }
 
 type OptionalFlag struct {
 	f *Flag
 }
 
+func (f *OptionalFlag) key() string {
+	return "--" + f.f.name
+}
+
 func (f *OptionalFlag) String(target **string) *OptionalString {
 	value := &OptionalString{target: target}
-	f.f.value = &optionalStringValue{inner: value}
+	f.f.value = &optionalStringValue{key: f.key(), inner: value}
 	return value
 }
 
 func (f *OptionalFlag) Int(target **int) *OptionalInt {
 	value := &OptionalInt{target: target}
-	f.f.value = &optionalIntValue{inner: value}
+	f.f.value = &optionalIntValue{key: f.key(), inner: value}
 	return value
 }
 
 func (f *OptionalFlag) Bool(target **bool) *OptionalBool {
 	value := &OptionalBool{target: target}
-	f.f.value = &optionalBoolValue{inner: value}
+	f.f.value = &optionalBoolValue{key: f.key(), inner: value}
 	return value
 }
 
 func (f *OptionalFlag) Strings(target *[]string) *Strings {
 	*target = []string{}
 	value := &Strings{target: target, optional: true}
-	f.f.value = &stringsValue{inner: value}
+	f.f.value = &stringsValue{key: f.key(), inner: value}
+	return value
+}
+
+func (f *OptionalFlag) Enum(target **string, possibilities ...string) *OptionalEnum {
+	value := &OptionalEnum{target: target}
+	f.f.value = &optionalEnumValue{key: f.key(), inner: value, possibilities: possibilities}
 	return value
 }
 

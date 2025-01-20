@@ -15,24 +15,42 @@ func (v *Int) Default(value int) {
 }
 
 type intValue struct {
+	key   string
 	inner *Int
 	set   bool
 }
 
-func (v *intValue) verify(displayName string) error {
+var _ value = (*intValue)(nil)
+
+func (v *intValue) optional() bool {
+	return false
+}
+
+func (v *intValue) hasDefault() bool {
+	return v.inner.defval != nil
+}
+
+func (v *intValue) Default() (string, bool) {
+	if v.inner.defval == nil {
+		return "", false
+	}
+	return strconv.Itoa(*v.inner.defval), true
+}
+
+func (v *intValue) verify() error {
 	if v.set {
 		return nil
-	} else if v.inner.defval != nil {
+	} else if v.hasDefault() {
 		*v.inner.target = *v.inner.defval
 		return nil
 	}
-	return fmt.Errorf("missing %s", displayName)
+	return fmt.Errorf("missing %s", v.key)
 }
 
 func (v *intValue) Set(val string) error {
 	n, err := strconv.Atoi(val)
 	if err != nil {
-		return err
+		return fmt.Errorf("%s: expected an integer but got %q", v.key, val)
 	}
 	*v.inner.target = n
 	v.set = true
@@ -44,7 +62,7 @@ func (v *intValue) String() string {
 		return ""
 	} else if v.set {
 		return strconv.Itoa(*v.inner.target)
-	} else if v.inner.defval != nil {
+	} else if v.hasDefault() {
 		return strconv.Itoa(*v.inner.defval)
 	}
 	return ""
@@ -60,14 +78,32 @@ func (v *OptionalInt) Default(value int) {
 }
 
 type optionalIntValue struct {
+	key   string
 	inner *OptionalInt
 	set   bool
 }
 
-func (v *optionalIntValue) verify(displayName string) error {
+var _ value = (*optionalIntValue)(nil)
+
+func (v *optionalIntValue) optional() bool {
+	return true
+}
+
+func (v *optionalIntValue) hasDefault() bool {
+	return v.inner.defval != nil
+}
+
+func (v *optionalIntValue) Default() (string, bool) {
+	if v.inner.defval == nil {
+		return "", false
+	}
+	return strconv.Itoa(*v.inner.defval), true
+}
+
+func (v *optionalIntValue) verify() error {
 	if v.set {
 		return nil
-	} else if v.inner.defval != nil {
+	} else if v.hasDefault() {
 		*v.inner.target = v.inner.defval
 		return nil
 	}
@@ -77,7 +113,7 @@ func (v *optionalIntValue) verify(displayName string) error {
 func (v *optionalIntValue) Set(val string) error {
 	n, err := strconv.Atoi(val)
 	if err != nil {
-		return err
+		return fmt.Errorf("%s: expected an integer but got %q", v.key, val)
 	}
 	*v.inner.target = &n
 	v.set = true
@@ -89,7 +125,7 @@ func (v *optionalIntValue) String() string {
 		return ""
 	} else if v.set {
 		return strconv.Itoa(**v.inner.target)
-	} else if v.inner.defval != nil {
+	} else if v.hasDefault() {
 		return strconv.Itoa(*v.inner.defval)
 	}
 	return ""

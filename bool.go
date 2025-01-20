@@ -15,24 +15,42 @@ func (v *Bool) Default(value bool) {
 }
 
 type boolValue struct {
+	key   string
 	inner *Bool
 	set   bool
 }
 
-func (v *boolValue) verify(displayName string) error {
+var _ value = (*boolValue)(nil)
+
+func (v *boolValue) optional() bool {
+	return false
+}
+
+func (v *boolValue) hasDefault() bool {
+	return v.inner.defval != nil
+}
+
+func (v *boolValue) Default() (string, bool) {
+	if v.inner.defval == nil {
+		return "", false
+	}
+	return strconv.FormatBool(*v.inner.defval), true
+}
+
+func (v *boolValue) verify() error {
 	if v.set {
 		return nil
-	} else if v.inner.defval != nil {
+	} else if v.hasDefault() {
 		*v.inner.target = *v.inner.defval
 		return nil
 	}
-	return fmt.Errorf("missing %s", displayName)
+	return fmt.Errorf("missing %s", v.key)
 }
 
 func (v *boolValue) Set(val string) (err error) {
 	*v.inner.target, err = strconv.ParseBool(val)
 	if err != nil {
-		return err
+		return fmt.Errorf("%s: expected a boolean but got %q", v.key, val)
 	}
 	v.set = true
 	return nil
@@ -43,7 +61,7 @@ func (v *boolValue) String() string {
 		return ""
 	} else if v.set {
 		return strconv.FormatBool(*v.inner.target)
-	} else if v.inner.defval != nil {
+	} else if v.hasDefault() {
 		return strconv.FormatBool(*v.inner.defval)
 	}
 	return "false"
@@ -64,6 +82,7 @@ func (v *OptionalBool) Default(value bool) {
 }
 
 type optionalBoolValue struct {
+	key   string
 	inner *OptionalBool
 	set   bool
 }
@@ -75,10 +94,25 @@ func (v *optionalBoolValue) IsBoolFlag() bool {
 	return true
 }
 
-func (v *optionalBoolValue) verify(displayName string) error {
+func (v *optionalBoolValue) optional() bool {
+	return true
+}
+
+func (v *optionalBoolValue) Default() (string, bool) {
+	if v.inner.defval == nil {
+		return "", false
+	}
+	return strconv.FormatBool(*v.inner.defval), true
+}
+
+func (v *optionalBoolValue) hasDefault() bool {
+	return v.inner.defval != nil
+}
+
+func (v *optionalBoolValue) verify() error {
 	if v.set {
 		return nil
-	} else if v.inner.defval != nil {
+	} else if v.hasDefault() {
 		*v.inner.target = v.inner.defval
 		return nil
 	}
@@ -88,7 +122,7 @@ func (v *optionalBoolValue) verify(displayName string) error {
 func (v *optionalBoolValue) Set(val string) error {
 	b, err := strconv.ParseBool(val)
 	if err != nil {
-		return err
+		return fmt.Errorf("%s: expected a boolean but got %q", v.key, val)
 	}
 	*v.inner.target = &b
 	v.set = true
@@ -100,7 +134,7 @@ func (v *optionalBoolValue) String() string {
 		return ""
 	} else if v.set {
 		return strconv.FormatBool(**v.inner.target)
-	} else if v.inner.defval != nil {
+	} else if v.hasDefault() {
 		return strconv.FormatBool(*v.inner.defval)
 	}
 	return ""

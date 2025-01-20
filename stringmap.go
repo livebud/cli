@@ -19,24 +19,51 @@ func (v *StringMap) Optional() {
 }
 
 type stringMapValue struct {
+	key   string
 	inner *StringMap
 	set   bool
 }
 
-func (v *stringMapValue) verify(displayName string) error {
+var _ value = (*stringMapValue)(nil)
+
+func (v *stringMapValue) optional() bool {
+	return false
+}
+
+func (v *stringMapValue) verify() error {
 	if v.set {
 		return nil
-	} else if v.inner.defval != nil {
+	} else if v.hasDefault() {
 		*v.inner.target = *v.inner.defval
 		return nil
 	}
-	return fmt.Errorf("missing %s", displayName)
+	return fmt.Errorf("missing %s", v.key)
+}
+
+func (v *stringMapValue) hasDefault() bool {
+	return v.inner.defval != nil
+}
+
+func (v *stringMapValue) Default() (string, bool) {
+	if v.inner.defval == nil {
+		return "", false
+	}
+	str := new(strings.Builder)
+	i := 0
+	for k, v := range *v.inner.defval {
+		if i > 0 {
+			str.WriteString(" ")
+		}
+		str.WriteString(k + ":" + v)
+		i++
+	}
+	return str.String(), true
 }
 
 func (v *stringMapValue) Set(val string) error {
 	kv := strings.SplitN(val, ":", 2)
 	if len(kv) != 2 {
-		return fmt.Errorf("invalid key:value pair for %q", val)
+		return fmt.Errorf("%s: invalid key:value pair for %q", v.key, val)
 	}
 	if *v.inner.target == nil {
 		*v.inner.target = map[string]string{}
@@ -51,7 +78,7 @@ func (v *stringMapValue) String() string {
 		return ""
 	} else if v.set {
 		return v.format(*v.inner.target)
-	} else if v.inner.defval != nil {
+	} else if v.hasDefault() {
 		return v.format(*v.inner.defval)
 	}
 	return ""

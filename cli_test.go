@@ -199,7 +199,7 @@ func TestHerokuHelp(t *testing.T) {
 
   {bold}Flags:{reset}
     -a, --app     {dim}app to run command against{reset}
-    -r, --remote  {dim}git remote of app to use{reset}
+    -r, --remote  {dim}git remote of app to use (optional){reset}
 
   {bold}Commands:{reset}
     addons  {dim}lists your add-ons and attachments{reset}
@@ -224,8 +224,8 @@ func TestHerokuHelpPs(t *testing.T) {
 
   {bold}Flags:{reset}
     -a, --app     {dim}app to run command against{reset}
-    -r, --remote  {dim}git remote of app to use{reset}
-    --json        {dim}output in json format{reset}
+    -r, --remote  {dim}git remote of app to use (optional){reset}
+    --json        {dim}output in json format (default: false){reset}
 
   {bold}Commands:{reset}
     autoscale  {dim}enable autoscaling for an app{reset}
@@ -250,8 +250,8 @@ func TestHerokuHelpPsAutoscale(t *testing.T) {
 
   {bold}Flags:{reset}
     -a, --app     {dim}app to run command against{reset}
-    -r, --remote  {dim}git remote of app to use{reset}
-    --json        {dim}output in json format{reset}
+    -r, --remote  {dim}git remote of app to use (optional){reset}
+    --json        {dim}output in json format (default: false){reset}
 
   {bold}Commands:{reset}
     disable  {dim}disable autoscaling for an app{reset}
@@ -276,8 +276,8 @@ func TestHerokuHelpPsAutoscaleEnable(t *testing.T) {
 
   {bold}Flags:{reset}
     -a, --app        {dim}app to run command against{reset}
-    -r, --remote     {dim}git remote of app to use{reset}
-    --json           {dim}output in json format{reset}
+    -r, --remote     {dim}git remote of app to use (optional){reset}
+    --json           {dim}output in json format (default: false){reset}
     --max            {dim}maximum number of dynos{reset}
     --min            {dim}minimum number of dynos{reset}
     --notifications  {dim}comma-separated list of notifications to enable{reset}
@@ -331,14 +331,14 @@ func TestHelpArgs(t *testing.T) {
 	is.NoErr(err)
 	isEqual(t, actual.String(), `
   {bold}Usage:{reset}
-    {dim}${reset} cp {dim}<src>{reset} {dim}<dst>{reset}
+    {dim}${reset} cp {dim}<src>{reset} {dim}[<dst>]{reset}
 
   {bold}Description:{reset}
     copy files
 
   {bold}Args:{reset}
     <src>  {dim}source{reset}
-    <dst>  {dim}destination{reset}
+    <dst>  {dim}destination (default: .){reset}
 
 `)
 }
@@ -408,6 +408,33 @@ func TestFlagStringDefault(t *testing.T) {
 	isEqual(t, actual.String(), ``)
 }
 
+func TestFlagStringEmptyDefault(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag string
+	cli.Flag("flag", "cli flag").String(&flag).Default("")
+	ctx := context.Background()
+	err := cli.Parse(ctx, "-h")
+	is.NoErr(err)
+	isEqual(t, actual.String(), `
+  {bold}Usage:{reset}
+    {dim}${reset} cli {dim}[flags]{reset}
+
+  {bold}Description:{reset}
+    desc
+
+  {bold}Flags:{reset}
+    --flag  {dim}cli flag (default: ""){reset}
+
+`)
+}
+
 func TestFlagStringRequired(t *testing.T) {
 	is := is.New(t)
 	actual := new(bytes.Buffer)
@@ -442,6 +469,40 @@ func TestFlagInt(t *testing.T) {
 	is.Equal(1, called)
 	is.Equal(flag, 10)
 	isEqual(t, actual.String(), ``)
+}
+
+func TestFlagIntInvalid(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag int
+	cli.Flag("flag", "cli flag").Int(&flag)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "--flag", "hi")
+	is.True(err != nil)
+	is.Equal(err.Error(), `--flag: expected an integer but got "hi"`)
+}
+
+func TestFlagOptionalIntInvalid(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag *int
+	cli.Flag("flag", "cli flag").Optional().Int(&flag)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "--flag", "hi")
+	is.True(err != nil)
+	is.Equal(err.Error(), `--flag: expected an integer but got "hi"`)
 }
 
 func TestFlagIntDefault(t *testing.T) {
@@ -552,6 +613,40 @@ func TestFlagBoolRequired(t *testing.T) {
 	err := cli.Parse(ctx)
 	is.True(err != nil)
 	is.Equal(err.Error(), "missing --flag")
+}
+
+func TestFlagBoolInvalid(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag bool
+	cli.Flag("flag", "cli flag").Bool(&flag)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "--flag=hi")
+	is.True(err != nil)
+	is.Equal(err.Error(), `--flag: expected a boolean but got "hi"`)
+}
+
+func TestFlagOptionalBoolInvalid(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag *bool
+	cli.Flag("flag", "cli flag").Optional().Bool(&flag)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "--flag=hi")
+	is.True(err != nil)
+	is.Equal(err.Error(), `--flag: expected a boolean but got "hi"`)
 }
 
 func TestFlagStrings(t *testing.T) {
@@ -844,8 +939,8 @@ func TestSubHelpShort(t *testing.T) {
     bud CLI
 
   {bold}Flags:{reset}
-    -L, --log  {dim}specify the logger{reset}
-    --debug    {dim}set the debugger{reset}
+    -L, --log  {dim}specify the logger (default: false){reset}
+    --debug    {dim}set the debugger (default: true){reset}
 
   {bold}Commands:{reset}
     build  {dim}build your application{reset}
@@ -1113,7 +1208,7 @@ func TestManualHelpUsage(t *testing.T) {
 
   {bold}Flags:{reset}
     -C, --chdir  {dim}change directory{reset}
-    -h, --help   {dim}help menu{reset}
+    -h, --help   {dim}help menu (default: false){reset}
 
 `)
 }
@@ -1257,7 +1352,8 @@ func TestFlagCustomError(t *testing.T) {
 	ctx := context.Background()
 	err := cli.Parse(ctx, "--hot=:35729")
 	is.True(err != nil)
-	is.Equal(err.Error(), `invalid value ":35729" for flag -hot: unable to parse`)
+	fmt.Println(err)
+	is.Equal(err.Error(), `--hot: invalid value ":35729": unable to parse`)
 }
 
 func TestFlagCustomMissing(t *testing.T) {
@@ -2134,6 +2230,23 @@ func TestArgEnumInvalid(t *testing.T) {
 	})
 	var arg string
 	cli.Arg("arg", "enum arg").Enum(&arg, "a", "b", "c")
+	ctx := context.Background()
+	err := cli.Parse(ctx, "d")
+	is.True(err != nil)
+	is.Equal(err.Error(), `<arg> "d" must be either "a", "b" or "c"`)
+}
+
+func TestArgOptionalEnumInvalid(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var arg *string
+	cli.Arg("arg", "enum arg").Optional().Enum(&arg, "a", "b", "c")
 	ctx := context.Background()
 	err := cli.Parse(ctx, "d")
 	is.True(err != nil)

@@ -9,21 +9,21 @@ import (
 	"strings"
 )
 
-func newSubcommand(config *config, flags []*Flag, name, full, help string) *subcommand {
+func newCommand(config *config, flags []*Flag, name, full, help string) *command {
 	fset := flag.NewFlagSet(name, flag.ContinueOnError)
 	fset.SetOutput(io.Discard)
-	return &subcommand{
+	return &command{
 		config:   config,
 		fset:     fset,
 		name:     name,
 		full:     full,
 		flags:    flags,
 		help:     help,
-		commands: map[string]*subcommand{},
+		commands: map[string]*command{},
 	}
 }
 
-type subcommand struct {
+type command struct {
 	config *config
 	fset   *flag.FlagSet
 	run    func(ctx context.Context) error
@@ -35,25 +35,27 @@ type subcommand struct {
 	help     string
 	hidden   bool
 	advanced bool
-	commands map[string]*subcommand
+	commands map[string]*command
 	flags    []*Flag
 	args     []*Arg
 	restArgs *Args // optional, collects the rest of the args
 }
 
-var _ Command = (*subcommand)(nil)
+var _ Command = (*command)(nil)
 
-func (c *subcommand) printUsage() error {
+func (c *command) printUsage() error {
 	return c.config.usage.Execute(c.config.writer, &usage{c})
 }
 
 type value interface {
 	flag.Value
-	verify(displayName string) error
+	optional() bool
+	verify() error
+	Default() (string, bool)
 }
 
 // Set flags only once
-func (c *subcommand) setFlags() error {
+func (c *command) setFlags() error {
 	if c.parsed {
 		return nil
 	}
@@ -76,7 +78,7 @@ func (c *subcommand) setFlags() error {
 	return nil
 }
 
-func (c *subcommand) parse(ctx context.Context, args []string) error {
+func (c *command) parse(ctx context.Context, args []string) error {
 	// Set flags
 	if err := c.setFlags(); err != nil {
 		return err
@@ -87,7 +89,7 @@ func (c *subcommand) parse(ctx context.Context, args []string) error {
 		if errors.Is(err, flag.ErrHelp) {
 			return c.printUsage()
 		}
-		return err
+		return maybeTrimError(err)
 	}
 	// Check if the first argument is a subcommand
 	if sub, ok := c.commands[c.fset.Arg(0)]; ok {
@@ -118,7 +120,9 @@ loop:
 			// Loop over the remaining unset args, appending them to restArgs
 			if c.restArgs != nil {
 				for _, arg := range restArgs[i:] {
-					c.restArgs.value.Set(arg)
+					if err := c.restArgs.value.Set(arg); err != nil {
+						return err
+					}
 				}
 			}
 			break loop
@@ -133,7 +137,7 @@ loop:
 	}
 	// Also verify rest args if we have any
 	if c.restArgs != nil {
-		if err := c.restArgs.verify(c.restArgs.name); err != nil {
+		if err := c.restArgs.verify(); err != nil {
 			return err
 		}
 	}
@@ -158,33 +162,33 @@ loop:
 	return nil
 }
 
-func (c *subcommand) Run(runner func(ctx context.Context) error) {
+func (c *command) Run(runner func(ctx context.Context) error) {
 	c.run = runner
 }
 
-func (c *subcommand) Command(name, help string) Command {
+func (c *command) Command(name, help string) Command {
 	if c.commands[name] != nil {
 		return c.commands[name]
 	}
 	// Copy the flags from the parent command
 	flags := append([]*Flag{}, c.flags...)
 	// Create the subcommand
-	cmd := newSubcommand(c.config, flags, name, c.full+" "+name, help)
+	cmd := newCommand(c.config, flags, name, c.full+" "+name, help)
 	c.commands[name] = cmd
 	return cmd
 }
 
-func (c *subcommand) Hidden() Command {
+func (c *command) Hidden() Command {
 	c.hidden = true
 	return c
 }
 
-func (c *subcommand) Advanced() Command {
+func (c *command) Advanced() Command {
 	c.advanced = true
 	return c
 }
 
-func (c *subcommand) Arg(name, help string) *Arg {
+func (c *command) Arg(name, help string) *Arg {
 	arg := &Arg{
 		name: name,
 		help: help,
@@ -193,7 +197,7 @@ func (c *subcommand) Arg(name, help string) *Arg {
 	return arg
 }
 
-func (c *subcommand) Args(name, help string) *Args {
+func (c *command) Args(name, help string) *Args {
 	if c.restArgs != nil {
 		// Panic is okay here because settings commands should be done during
 		// initialization. We want to fail fast for invalid usage.
@@ -207,7 +211,7 @@ func (c *subcommand) Args(name, help string) *Args {
 	return args
 }
 
-func (c *subcommand) Flag(name, help string) *Flag {
+func (c *command) Flag(name, help string) *Flag {
 	flag := &Flag{
 		name: name,
 		help: help,
@@ -216,7 +220,7 @@ func (c *subcommand) Flag(name, help string) *Flag {
 	return flag
 }
 
-func (c *subcommand) Find(cmds ...string) (*subcommand, bool) {
+func (c *command) Find(cmds ...string) (*command, bool) {
 	if len(cmds) == 0 {
 		return c, true
 	}
@@ -245,4 +249,47 @@ func parseFlags(fset *flag.FlagSet, args []string) (rest []string, err error) {
 		return rest, nil
 	}
 	return rest, nil
+}
+
+// This is a hack to trim the error messages returned by the flag package.
+func maybeTrimError(err error) error {
+	msg := err.Error()
+	idx := -1
+	if strings.HasPrefix(msg, "invalid value ") {
+		idx = maybeTrimInvalidValue(msg)
+	} else if strings.HasPrefix(msg, "invalid boolean value ") {
+		idx = maybeTrimInvalidBooleanValue(msg)
+	}
+	if idx < 0 {
+		return err
+	}
+	return errors.New(msg[idx:])
+}
+
+func maybeTrimInvalidValue(msg string) int {
+	i1 := strings.Index(msg, `" for flag -`)
+	if i1 < 0 {
+		return i1
+	}
+	i1 += 12
+	i2 := strings.Index(msg[i1:], ": ")
+	if i2 < 0 {
+		return i2
+	}
+	i2 += 2
+	return i1 + i2
+}
+
+func maybeTrimInvalidBooleanValue(msg string) int {
+	i1 := strings.Index(msg, `" for -`)
+	if i1 < 0 {
+		return i1
+	}
+	i1 += 7
+	i2 := strings.Index(msg[i1:], `: `)
+	if i2 < 0 {
+		return i2
+	}
+	i2 += 2
+	return i1 + i2
 }

@@ -18,25 +18,44 @@ func (v *Custom) Optional() {
 }
 
 type customValue struct {
+	key   string
 	inner *Custom
 	set   bool
 }
 
 var _ value = (*customValue)(nil)
 
-func (v *customValue) verify(displayName string) error {
+func (v *customValue) optional() bool {
+	return false
+}
+
+func (v *customValue) verify() error {
 	if v.set {
 		return nil
-	} else if v.inner.defval != nil {
+	} else if v.hasDefault() {
 		return v.inner.target(*v.inner.defval)
 	}
-	return fmt.Errorf("missing %s", displayName)
+	return fmt.Errorf("missing %s", v.key)
+}
+
+func (v *customValue) hasDefault() bool {
+	return v.inner.defval != nil
+}
+
+func (v *customValue) Default() (string, bool) {
+	if v.inner.defval == nil {
+		return "", false
+	}
+	return *v.inner.defval, true
 }
 
 func (v *customValue) Set(val string) error {
 	err := v.inner.target(val)
+	if err != nil {
+		return fmt.Errorf("%s: invalid value %q: %w", v.key, val, err)
+	}
 	v.set = true
-	return err
+	return nil
 }
 
 func (v *customValue) String() string {
@@ -44,7 +63,7 @@ func (v *customValue) String() string {
 		return ""
 	} else if v.set {
 		return ""
-	} else if v.inner.defval != nil {
+	} else if v.hasDefault() {
 		return *v.inner.defval
 	}
 	return ""

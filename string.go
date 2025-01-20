@@ -12,18 +12,36 @@ func (v *String) Default(value string) {
 }
 
 type stringValue struct {
+	key   string
 	inner *String
 	set   bool
 }
 
-func (v *stringValue) verify(displayName string) error {
+func (v *stringValue) optional() bool {
+	return false
+}
+
+var _ value = (*stringValue)(nil)
+
+func (v *stringValue) verify() error {
 	if v.set {
 		return nil
-	} else if v.inner.defval != nil {
+	} else if v.hasDefault() {
 		*v.inner.target = *v.inner.defval
 		return nil
 	}
-	return fmt.Errorf("missing %s", displayName)
+	return fmt.Errorf("missing %s", v.key)
+}
+
+func (v *stringValue) hasDefault() bool {
+	return v.inner.defval != nil
+}
+
+func (v *stringValue) Default() (string, bool) {
+	if v.inner.defval == nil {
+		return "", false
+	}
+	return *v.inner.defval, true
 }
 
 func (v *stringValue) Set(val string) error {
@@ -37,7 +55,7 @@ func (v *stringValue) String() string {
 		return ""
 	} else if v.set {
 		return *v.inner.target
-	} else if v.inner.defval != nil {
+	} else if v.hasDefault() {
 		return *v.inner.defval
 	}
 	return ""
@@ -53,16 +71,32 @@ func (v *OptionalString) Default(value string) {
 }
 
 type optionalStringValue struct {
+	key   string
 	inner *OptionalString
 	set   bool
 }
 
 var _ value = (*optionalStringValue)(nil)
 
-func (v *optionalStringValue) verify(displayName string) error {
+func (v *optionalStringValue) optional() bool {
+	return true
+}
+
+func (v *optionalStringValue) hasDefault() bool {
+	return v.inner.defval != nil
+}
+
+func (v *optionalStringValue) Default() (string, bool) {
+	if v.inner.defval == nil {
+		return "", false
+	}
+	return *v.inner.defval, true
+}
+
+func (v *optionalStringValue) verify() error {
 	if v.set {
 		return nil
-	} else if v.inner.defval != nil {
+	} else if v.hasDefault() {
 		*v.inner.target = v.inner.defval
 		return nil
 	}
@@ -80,7 +114,7 @@ func (v *optionalStringValue) String() string {
 		return ""
 	} else if v.set {
 		return **v.inner.target
-	} else if v.inner.defval != nil {
+	} else if v.hasDefault() {
 		return *v.inner.defval
 	}
 	return ""

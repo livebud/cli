@@ -27,11 +27,11 @@ type Command interface {
 
 func New(name, help string) *CLI {
 	config := &config{"", os.Stdout, defaultUsage, []os.Signal{os.Interrupt}}
-	return &CLI{newSubcommand(config, []*Flag{}, name, name, help), config}
+	return &CLI{newCommand(config, []*Flag{}, name, name, help), config}
 }
 
 type CLI struct {
-	root   *subcommand
+	root   *command
 	config *config
 }
 
@@ -110,7 +110,7 @@ func (c *CLI) Find(subcommand ...string) (Command, error) {
 	return c.find(subcommand...)
 }
 
-func (c *CLI) find(subcommand ...string) (*subcommand, error) {
+func (c *CLI) find(subcommand ...string) (*command, error) {
 	sub, ok := c.root.Find(subcommand...)
 	if !ok {
 		return nil, fmt.Errorf("%w: %s", ErrCommandNotFound, strings.Join(subcommand, " "))

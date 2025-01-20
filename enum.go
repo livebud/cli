@@ -16,47 +16,46 @@ func (v *Enum) Default(value string) {
 }
 
 type enumValue struct {
+	key           string
 	inner         *Enum
 	set           bool
 	possibilities []string
 }
 
-func (v *enumValue) check(displayName, val string) error {
-	for _, p := range v.possibilities {
-		if p == val {
-			return nil
-		}
-	}
-	s := new(strings.Builder)
-	lp := len(v.possibilities)
-	for i, p := range v.possibilities {
-		if i == lp-1 {
-			s.WriteString(" or ")
-		} else if i > 0 {
-			s.WriteString(", ")
-		}
-		s.WriteString(strconv.Quote(p))
-	}
-	return fmt.Errorf("%s %q must be either %s", displayName, val, s.String())
+var _ value = (*enumValue)(nil)
+
+func (v *enumValue) optional() bool {
+	return false
 }
 
-func (v *enumValue) verify(displayName string) error {
+func (v *enumValue) hasDefault() bool {
+	return v.inner.defval != nil
+}
+
+func (v *enumValue) Default() (string, bool) {
+	if v.inner.defval == nil {
+		return "", false
+	}
+	return *v.inner.defval, true
+}
+
+func (v *enumValue) verify() error {
 	if v.set {
-		if err := v.check(displayName, *v.inner.target); err != nil {
-			return err
-		}
 		return nil
-	} else if v.inner.defval != nil {
-		if err := v.check(displayName, *v.inner.defval); err != nil {
+	} else if v.hasDefault() {
+		if err := verifyEnum(v.key, *v.inner.defval, v.possibilities...); err != nil {
 			return err
 		}
 		*v.inner.target = *v.inner.defval
 		return nil
 	}
-	return fmt.Errorf("missing %s", displayName)
+	return fmt.Errorf("missing %s", v.key)
 }
 
 func (v *enumValue) Set(val string) error {
+	if err := verifyEnum(v.key, val, v.possibilities...); err != nil {
+		return err
+	}
 	*v.inner.target = val
 	v.set = true
 	return nil
@@ -67,32 +66,52 @@ func (v *enumValue) String() string {
 		return ""
 	} else if v.set {
 		return *v.inner.target
-	} else if v.inner.defval != nil {
+	} else if v.hasDefault() {
 		return *v.inner.defval
 	}
 	return ""
 }
 
-type EnumValue struct {
+type OptionalEnum struct {
 	target **string
 	defval *string // default value
 }
 
-func (v *EnumValue) Default(value string) {
+func (v *OptionalEnum) Default(value string) {
 	v.defval = &value
 }
 
 type optionalEnumValue struct {
-	inner *EnumValue
-	set   bool
+	key           string
+	inner         *OptionalEnum
+	set           bool
+	possibilities []string
 }
 
 var _ value = (*optionalEnumValue)(nil)
 
-func (v *optionalEnumValue) verify(displayName string) error {
+func (v *optionalEnumValue) optional() bool {
+	return true
+}
+
+func (v *optionalEnumValue) hasDefault() bool {
+	return v.inner.defval != nil
+}
+
+func (v *optionalEnumValue) Default() (string, bool) {
+	if v.inner.defval == nil {
+		return "", false
+	}
+	return *v.inner.defval, true
+}
+
+func (v *optionalEnumValue) verify() error {
 	if v.set {
 		return nil
-	} else if v.inner.defval != nil {
+	} else if v.hasDefault() {
+		if err := verifyEnum(v.key, *v.inner.defval, v.possibilities...); err != nil {
+			return err
+		}
 		*v.inner.target = v.inner.defval
 		return nil
 	}
@@ -100,6 +119,9 @@ func (v *optionalEnumValue) verify(displayName string) error {
 }
 
 func (v *optionalEnumValue) Set(val string) error {
+	if err := verifyEnum(v.key, val, v.possibilities...); err != nil {
+		return err
+	}
 	*v.inner.target = &val
 	v.set = true
 	return nil
@@ -110,8 +132,27 @@ func (v *optionalEnumValue) String() string {
 		return ""
 	} else if v.set {
 		return **v.inner.target
-	} else if v.inner.defval != nil {
+	} else if v.hasDefault() {
 		return *v.inner.defval
 	}
 	return ""
+}
+
+func verifyEnum(key, val string, possibilities ...string) error {
+	for _, p := range possibilities {
+		if p == val {
+			return nil
+		}
+	}
+	s := new(strings.Builder)
+	lp := len(possibilities)
+	for i, p := range possibilities {
+		if i == lp-1 {
+			s.WriteString(" or ")
+		} else if i > 0 {
+			s.WriteString(", ")
+		}
+		s.WriteString(strconv.Quote(p))
+	}
+	return fmt.Errorf("%s %q must be either %s", key, val, s.String())
 }

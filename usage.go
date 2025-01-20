@@ -20,7 +20,7 @@ var usageTemplate string
 var defaultUsage = template.Must(template.New("usage").Funcs(colors).Parse(usageTemplate))
 
 type usage struct {
-	cmd *subcommand
+	cmd *command
 }
 
 func (u *usage) Name() string {
@@ -29,6 +29,14 @@ func (u *usage) Name() string {
 
 func (u *usage) Full() string {
 	return u.cmd.full
+}
+
+func argIsOptional(arg *Arg) bool {
+	if arg.value.optional() {
+		return true
+	}
+	_, hasDefault := arg.value.Default()
+	return hasDefault
 }
 
 func (u *usage) Usage() string {
@@ -41,11 +49,18 @@ func (u *usage) Usage() string {
 	}
 	if u.cmd.run != nil && len(u.cmd.args) > 0 {
 		for _, arg := range u.cmd.args {
+			isOptionalOrHasDefault := argIsOptional(arg)
 			out.WriteString(" ")
 			out.WriteString(dim())
+			if isOptionalOrHasDefault {
+				out.WriteString("[")
+			}
 			out.WriteString("<")
 			out.WriteString(arg.name)
 			out.WriteString(">")
+			if isOptionalOrHasDefault {
+				out.WriteString("]")
+			}
 			out.WriteString(reset())
 		}
 	} else if len(u.cmd.commands) > 0 {
@@ -72,15 +87,29 @@ type usageArg struct {
 	a *Arg
 }
 
+func (a *usageArg) Suffix() string {
+	if def, ok := a.a.value.Default(); ok {
+		return " (default: " + def + ")"
+	} else if a.a.value.optional() {
+		return " (optional)"
+	}
+	return ""
+}
+
 type usageArgs []*usageArg
 
 func (args usageArgs) Usage() (string, error) {
 	buf := new(bytes.Buffer)
 	tw := tabwriter.NewWriter(buf, 0, 0, 2, ' ', 0)
 	for _, arg := range args {
-		tw.Write([]byte("\t\t<" + arg.a.name + ">"))
+		tw.Write([]byte("\t\t<"))
+		tw.Write([]byte(arg.a.name))
+		tw.Write([]byte(">"))
 		if arg.a.help != "" {
-			tw.Write([]byte("\t" + dim() + arg.a.help + reset()))
+			tw.Write([]byte("\t" + dim()))
+			tw.Write([]byte(arg.a.help))
+			tw.Write([]byte(arg.Suffix()))
+			tw.Write([]byte(reset()))
 		}
 		tw.Write([]byte("\n"))
 	}
@@ -136,7 +165,7 @@ func (u *usage) Flags() (flags usageFlags) {
 }
 
 type usageCommand struct {
-	c *subcommand
+	c *command
 }
 
 type usageCommands []*usageCommand
@@ -161,6 +190,18 @@ type usageFlag struct {
 	f *Flag
 }
 
+func (u *usageFlag) Suffix() string {
+	if def, ok := u.f.value.Default(); ok {
+		if def == "" {
+			return " (default: \"\")"
+		}
+		return " (default: " + def + ")"
+	} else if u.f.value.optional() {
+		return " (optional)"
+	}
+	return ""
+}
+
 type usageFlags []*usageFlag
 
 func (flags usageFlags) Usage() (string, error) {
@@ -173,8 +214,10 @@ func (flags usageFlags) Usage() (string, error) {
 		}
 		tw.Write([]byte("--" + flag.f.name))
 		if flag.f.help != "" {
-			tw.Write([]byte("\t"))
-			tw.Write([]byte(dim() + flag.f.help + reset()))
+			tw.Write([]byte("\t" + dim()))
+			tw.Write([]byte(flag.f.help))
+			tw.Write([]byte(flag.Suffix()))
+			tw.Write([]byte(reset()))
 		}
 		tw.Write([]byte("\n"))
 	}
