@@ -146,3 +146,27 @@ func trap(parent context.Context, signals ...os.Signal) context.Context {
 	}()
 	return ctx
 }
+
+func lookupEnv(key *string) (string, bool) {
+	if key == nil {
+		return "", false
+	}
+	return os.LookupEnv(*key)
+}
+
+type missingError struct {
+	Key string
+	Env *string
+}
+
+func (m *missingError) Error() string {
+	s := new(strings.Builder)
+	s.WriteString("missing ")
+	s.WriteString(m.Key)
+	if m.Env != nil {
+		s.WriteString(" or ")
+		s.WriteString(*m.Env)
+		s.WriteString(" environment variable")
+	}
+	return s.String()
+}

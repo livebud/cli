@@ -7,6 +7,7 @@ import (
 
 type Bool struct {
 	target *bool
+	envvar *string
 	defval *bool // default value
 }
 
@@ -40,11 +41,13 @@ func (v *boolValue) Default() (string, bool) {
 func (v *boolValue) verify() error {
 	if v.set {
 		return nil
+	} else if value, ok := lookupEnv(v.inner.envvar); ok {
+		return v.Set(value)
 	} else if v.hasDefault() {
 		*v.inner.target = *v.inner.defval
 		return nil
 	}
-	return fmt.Errorf("missing %s", v.key)
+	return &missingError{v.key, v.inner.envvar}
 }
 
 func (v *boolValue) Set(val string) (err error) {
@@ -74,6 +77,7 @@ func (v *boolValue) IsBoolFlag() bool {
 
 type OptionalBool struct {
 	target **bool
+	envvar *string
 	defval *bool // default value
 }
 
@@ -112,6 +116,8 @@ func (v *optionalBoolValue) hasDefault() bool {
 func (v *optionalBoolValue) verify() error {
 	if v.set {
 		return nil
+	} else if value, ok := lookupEnv(v.inner.envvar); ok {
+		return v.Set(value)
 	} else if v.hasDefault() {
 		*v.inner.target = v.inner.defval
 		return nil

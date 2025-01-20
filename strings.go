@@ -3,10 +3,13 @@ package cli
 import (
 	"fmt"
 	"strings"
+
+	"github.com/kballard/go-shellquote"
 )
 
 type Strings struct {
 	target   *[]string
+	envvar   *string
 	defval   *[]string // default value
 	optional bool
 }
@@ -30,13 +33,24 @@ func (v *stringsValue) optional() bool {
 func (v *stringsValue) verify() error {
 	if v.set {
 		return nil
+	} else if value, ok := lookupEnv(v.inner.envvar); ok {
+		fields, err := shellquote.Split(value)
+		if err != nil {
+			return fmt.Errorf("%s: expected a list of strings but got %q", v.key, value)
+		}
+		for _, kv := range fields {
+			if err := v.Set(kv); err != nil {
+				return err
+			}
+		}
+		return nil
 	} else if v.hasDefault() {
 		*v.inner.target = *v.inner.defval
 		return nil
 	} else if v.inner.optional {
 		return nil
 	}
-	return fmt.Errorf("missing %s", v.key)
+	return &missingError{v.key, v.inner.envvar}
 }
 
 func (v *stringsValue) hasDefault() bool {

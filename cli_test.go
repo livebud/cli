@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -44,17 +43,7 @@ func equal(t testing.TB, expect, actual string) {
 	if expect == actual {
 		return
 	}
-	var b bytes.Buffer
-	b.WriteString("\n\x1b[4mExpect\x1b[0m:\n")
-	b.WriteString(expect)
-	b.WriteString("\n\n")
-	b.WriteString("\x1b[4mActual\x1b[0m: \n")
-	b.WriteString(actual)
-	b.WriteString("\n\n")
-	b.WriteString("\x1b[4mDifference\x1b[0m: \n")
-	b.WriteString(diff.String(expect, actual))
-	b.WriteString("\n")
-	t.Fatal(b.String())
+	t.Fatal(diff.String(expect, actual))
 }
 
 func encode(w io.Writer, cmd, in interface{}) error {
@@ -740,6 +729,23 @@ func TestFlagStringMapRequired(t *testing.T) {
 	is.Equal(err.Error(), "missing --flag")
 }
 
+func TestFlagStringMapOptional(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flags map[string]string
+	cli.Flag("flag", "cli flag").Optional().StringMap(&flags)
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(len(flags), 0)
+}
+
 func TestFlagStringMapDefault(t *testing.T) {
 	is := is.New(t)
 	actual := new(bytes.Buffer)
@@ -762,7 +768,7 @@ func TestFlagStringMapDefault(t *testing.T) {
 	is.Equal(flags["b"], "2")
 }
 
-func TestArgStringMap(t *testing.T) {
+func TestArgsStringMap(t *testing.T) {
 	is := is.New(t)
 	actual := new(bytes.Buffer)
 	called := 0
@@ -772,7 +778,7 @@ func TestArgStringMap(t *testing.T) {
 		return nil
 	})
 	var args map[string]string
-	cli.Arg("arg", "arg map").StringMap(&args)
+	cli.Args("arg", "arg map").StringMap(&args)
 	// Can have only one arg
 	ctx := context.Background()
 	err := cli.Parse(ctx, "a:1 + 1")
@@ -781,7 +787,7 @@ func TestArgStringMap(t *testing.T) {
 	is.Equal(args["a"], "1 + 1")
 }
 
-func TestArgStringMapRequired(t *testing.T) {
+func TestArgsStringMapRequired(t *testing.T) {
 	is := is.New(t)
 	actual := new(bytes.Buffer)
 	called := 0
@@ -791,14 +797,14 @@ func TestArgStringMapRequired(t *testing.T) {
 		return nil
 	})
 	var args map[string]string
-	cli.Arg("arg", "arg map").StringMap(&args)
+	cli.Args("arg", "arg map").StringMap(&args)
 	ctx := context.Background()
 	err := cli.Parse(ctx)
 	is.True(err != nil)
-	is.Equal(err.Error(), "missing <arg>")
+	is.Equal(err.Error(), "missing <key:value...>")
 }
 
-func TestArgStringMapDefault(t *testing.T) {
+func TestArgsStringMapDefault(t *testing.T) {
 	is := is.New(t)
 	actual := new(bytes.Buffer)
 	called := 0
@@ -808,7 +814,7 @@ func TestArgStringMapDefault(t *testing.T) {
 		return nil
 	})
 	var args map[string]string
-	cli.Arg("arg", "arg map").StringMap(&args).Default(map[string]string{
+	cli.Args("arg", "arg map").StringMap(&args).Default(map[string]string{
 		"a": "1",
 		"b": "2",
 	})
@@ -1265,7 +1271,7 @@ func TestArgClearMap(t *testing.T) {
 		return nil
 	})
 	args := map[string]string{"a": "a"}
-	cli.Arg("custom", "custom string map").StringMap(&args)
+	cli.Args("custom", "custom string map").StringMap(&args)
 	ctx := context.Background()
 	err := cli.Parse(ctx, "b:b")
 	is.NoErr(err)
@@ -1314,106 +1320,6 @@ func TestFlagClearMap(t *testing.T) {
 	is.Equal(len(args), 1)
 	is.Equal(args["b"], "b")
 	isEqual(t, actual.String(), ``)
-}
-
-func TestFlagCustom(t *testing.T) {
-	is := is.New(t)
-	actual := new(bytes.Buffer)
-	called := 0
-	cli := cli.New("cli", "cli command").Writer(actual)
-	hot := ""
-	cli.Flag("hot", "hot server").Custom(func(v string) error {
-		hot = v
-		return nil
-	})
-	cli.Run(func(ctx context.Context) error {
-		called++
-		return nil
-	})
-	ctx := context.Background()
-	err := cli.Parse(ctx, "--hot=:35729")
-	is.NoErr(err)
-	is.Equal(1, called)
-	is.Equal(hot, ":35729")
-}
-
-func TestFlagCustomError(t *testing.T) {
-	is := is.New(t)
-	actual := new(bytes.Buffer)
-	called := 0
-	cli := cli.New("cli", "cli command").Writer(actual)
-	cli.Flag("hot", "hot server").Custom(func(v string) error {
-		return fmt.Errorf("unable to parse")
-	})
-	cli.Run(func(ctx context.Context) error {
-		called++
-		return nil
-	})
-	ctx := context.Background()
-	err := cli.Parse(ctx, "--hot=:35729")
-	is.True(err != nil)
-	fmt.Println(err)
-	is.Equal(err.Error(), `--hot: invalid value ":35729": unable to parse`)
-}
-
-func TestFlagCustomMissing(t *testing.T) {
-	is := is.New(t)
-	actual := new(bytes.Buffer)
-	called := 0
-	cli := cli.New("cli", "cli command").Writer(actual)
-	cli.Flag("hot", "hot server").Custom(func(v string) error {
-		return nil
-	})
-	cli.Run(func(ctx context.Context) error {
-		called++
-		return nil
-	})
-	ctx := context.Background()
-	err := cli.Parse(ctx)
-	is.True(err != nil)
-	is.Equal(err.Error(), `missing --hot`)
-}
-
-func TestFlagCustomMissingDefault(t *testing.T) {
-	is := is.New(t)
-	actual := new(bytes.Buffer)
-	called := 0
-	cli := cli.New("cli", "cli command").Writer(actual)
-	hot := ""
-	cli.Flag("hot", "hot server").Custom(func(v string) error {
-		hot = v
-		return nil
-	}).Default(":35729")
-	cli.Run(func(ctx context.Context) error {
-		called++
-		return nil
-	})
-	ctx := context.Background()
-	err := cli.Parse(ctx)
-	is.NoErr(err)
-	is.Equal(1, called)
-	is.Equal(hot, ":35729")
-}
-
-func TestFlagCustomDefault(t *testing.T) {
-	is := is.New(t)
-	actual := new(bytes.Buffer)
-	called := 0
-	cli := cli.New("cli", "cli command").Writer(actual)
-	hot := ""
-	cli.Flag("hot", "hot server").Custom(func(v string) error {
-		hot = v
-		return nil
-	}).Default(":35729")
-	cli.Run(func(ctx context.Context) error {
-		called++
-		return nil
-	})
-	ctx := context.Background()
-	err := cli.Parse(ctx, "--hot=false")
-	is.NoErr(err)
-	is.Equal(1, called)
-	is.Equal(hot, "false")
 }
 
 func TestFlagOptionalString(t *testing.T) {
@@ -1827,7 +1733,7 @@ func TestFlagOptionalStringsEmpty(t *testing.T) {
 	err := cli.Parse(ctx)
 	is.NoErr(err)
 	is.Equal(1, called)
-	is.Equal(s, []string{})
+	is.Equal(s, nil)
 }
 
 func TestArgsOptionalStrings(t *testing.T) {
@@ -1881,7 +1787,7 @@ func TestArgsOptionalStringsEmpty(t *testing.T) {
 	err := cli.Parse(ctx)
 	is.NoErr(err)
 	is.Equal(1, called)
-	is.Equal(s, []string{})
+	is.Equal(s, nil)
 }
 
 func TestArgsRequiredStringsMissing(t *testing.T) {
@@ -2488,4 +2394,207 @@ func TestFlagCopy(t *testing.T) {
 	is.NoErr(cli.Parse(ctx, "check", "-h"))
 	is.True(strings.Contains(actual.String(), "revision"))
 	is.True(!strings.Contains(actual.String(), "public-key"))
+}
+
+func TestFlagEnv(t *testing.T) {
+	is := is.New(t)
+	ctx := context.Background()
+	actual := new(bytes.Buffer)
+	cli := cli.New("cli", "cli command").Writer(actual)
+	verbose := false
+	log := ""
+	n := 0
+	dir := ""
+	mp := map[string]string{}
+	arr := []string{}
+	cli.Flag("verbose", "verbose").Env("VERBOSE").Bool(&verbose)
+	cli.Flag("log", "log level").Env("LOG").Enum(&log, "debug", "info", "warn", "error").Default("info")
+	cli.Flag("n", "n").Env("N").Int(&n)
+	cli.Flag("dir", "dir").Env("DIR").String(&dir)
+	cli.Flag("mp", "mp").Env("MP").StringMap(&mp)
+	cli.Flag("arr", "arr").Env("ARR").Strings(&arr)
+
+	t.Setenv("VERBOSE", "true")
+	t.Setenv("LOG", "debug")
+	t.Setenv("N", "1")
+	t.Setenv("DIR", "dir")
+	t.Setenv("MP", "a:b c:'d e'")
+	t.Setenv("ARR", "a b 'c d'")
+
+	is.NoErr(cli.Parse(ctx))
+
+	is.Equal(true, verbose)
+	is.Equal("debug", log)
+	is.Equal(1, n)
+	is.Equal("dir", dir)
+
+	is.Equal(len(mp), 2)
+	is.Equal(mp["a"], "b")
+	is.Equal(mp["c"], "d e")
+
+	is.Equal(3, len(arr))
+	is.Equal(arr[0], "a")
+	is.Equal(arr[1], "b")
+	is.Equal(arr[2], "c d")
+}
+
+func TestArgEnv(t *testing.T) {
+	is := is.New(t)
+	ctx := context.Background()
+	actual := new(bytes.Buffer)
+	cli := cli.New("cli", "cli command").Writer(actual)
+	verbose := false
+	log := ""
+	n := 0
+	dir := ""
+	mp := map[string]string{}
+	arr := []string{}
+	cli.Arg("verbose", "verbose").Env("VERBOSE").Bool(&verbose)
+	cli.Arg("log", "log level").Env("LOG").Enum(&log, "debug", "info", "warn", "error").Default("info")
+	cli.Arg("n", "n").Env("N").Int(&n)
+	cli.Arg("dir", "dir").Env("DIR").String(&dir)
+	cli.Arg("mp", "mp").Env("MP").StringMap(&mp)
+	cli.Args("arr", "arr").Env("ARR").Strings(&arr)
+
+	t.Setenv("VERBOSE", "true")
+	t.Setenv("LOG", "debug")
+	t.Setenv("N", "1")
+	t.Setenv("DIR", "dir")
+	t.Setenv("MP", "a:b c:'d e'")
+	t.Setenv("ARR", "a b 'c d'")
+
+	is.NoErr(cli.Parse(ctx))
+
+	is.Equal(true, verbose)
+	is.Equal("debug", log)
+	is.Equal(1, n)
+	is.Equal("dir", dir)
+
+	is.Equal(len(mp), 2)
+	is.Equal(mp["a"], "b")
+	is.Equal(mp["c"], "d e")
+
+	is.Equal(3, len(arr))
+	is.Equal(arr[0], "a")
+	is.Equal(arr[1], "b")
+	is.Equal(arr[2], "c d")
+}
+
+func TestFlagEnvFlagPriority(t *testing.T) {
+	is := is.New(t)
+	ctx := context.Background()
+	actual := new(bytes.Buffer)
+	cli := cli.New("cli", "cli command").Writer(actual)
+	verbose := false
+	log := ""
+	n := 0
+	dir := ""
+	mp := map[string]string{}
+	arr := []string{}
+	cli.Flag("verbose", "verbose").Env("VERBOSE").Bool(&verbose)
+	cli.Flag("log", "log level").Env("LOG").Enum(&log, "debug", "info", "warn", "error").Default("info")
+	cli.Flag("n", "n").Env("N").Int(&n)
+	cli.Flag("dir", "dir").Env("DIR").String(&dir)
+	cli.Flag("mp", "mp").Env("MP").StringMap(&mp)
+	cli.Flag("arr", "arr").Env("ARR").Strings(&arr)
+
+	t.Setenv("VERBOSE", "true")
+	t.Setenv("LOG", "debug")
+	t.Setenv("N", "1")
+	t.Setenv("DIR", "dir")
+	t.Setenv("MP", "a:b,c:d")
+	t.Setenv("ARR", "a,b,c")
+
+	is.NoErr(cli.Parse(ctx,
+		"--verbose=false",
+		"--log", "warn",
+		"--n", "2",
+		"--dir", "dir2",
+		"--mp", "e:f",
+		"--mp", "g:h",
+		"--arr", "d",
+		"--arr", "e",
+		"--arr", "f",
+	))
+
+	is.Equal(false, verbose)
+	is.Equal("warn", log)
+	is.Equal(2, n)
+	is.Equal("dir2", dir)
+
+	is.Equal(len(mp), 2)
+	is.Equal(mp["e"], "f")
+	is.Equal(mp["g"], "h")
+
+	is.Equal(3, len(arr))
+	is.Equal(arr[0], "d")
+	is.Equal(arr[1], "e")
+	is.Equal(arr[2], "f")
+}
+
+func TestFlagOptionalEnv(t *testing.T) {
+	is := is.New(t)
+	ctx := context.Background()
+	actual := new(bytes.Buffer)
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var verbose *bool
+	var log *string
+	var n *int
+	var dir *string
+	var mp map[string]string
+	var arr []string
+	cli.Flag("verbose", "verbose").Env("VERBOSE").Optional().Bool(&verbose)
+	cli.Flag("log", "log level").Env("LOG").Optional().Enum(&log, "debug", "info", "warn", "error")
+	cli.Flag("n", "n").Env("N").Optional().Int(&n)
+	cli.Flag("dir", "dir").Env("DIR").Optional().String(&dir)
+	cli.Flag("mp", "mp").Env("MP").Optional().StringMap(&mp)
+	cli.Flag("arr", "arr").Env("ARR").Optional().Strings(&arr)
+
+	is.NoErr(cli.Parse(ctx))
+
+	is.Equal(nil, verbose)
+	is.Equal(nil, log)
+	is.Equal(nil, n)
+	is.Equal(nil, dir)
+
+	is.Equal(mp, nil)
+	is.Equal(arr, nil)
+}
+
+func TestEnvHelp(t *testing.T) {
+	is := is.New(t)
+	ctx := context.Background()
+	actual := new(bytes.Buffer)
+	cli := cli.New("cli", "cli command").Writer(actual)
+	verbose := false
+	log := ""
+	n := 0
+	dir := ""
+	mp := map[string]string{}
+	arr := []string{}
+	cli.Flag("verbose", "verbose").Env("VERBOSE").Bool(&verbose)
+	cli.Flag("log", "log level").Env("LOG").Enum(&log, "debug", "info", "warn", "error").Default("info")
+	cli.Flag("n", "n").Env("N").Int(&n)
+	cli.Flag("dir", "dir").Env("DIR").String(&dir)
+	cli.Flag("mp", "mp").Env("MP").StringMap(&mp)
+	cli.Flag("arr", "arr").Env("ARR").Strings(&arr)
+
+	is.NoErr(cli.Parse(ctx, "-h"))
+
+	isEqual(t, actual.String(), `
+  {bold}Usage:{reset}
+    {dim}${reset} cli {dim}[flags]{reset}
+
+  {bold}Description:{reset}
+    cli command
+
+  {bold}Flags:{reset}
+    --arr      {dim}arr (env: ARR){reset}
+    --dir      {dim}dir (env: DIR){reset}
+    --log      {dim}log level (default: info, env: LOG){reset}
+    --mp       {dim}mp (env: MP){reset}
+    --n        {dim}n (env: N){reset}
+    --verbose  {dim}verbose (env: VERBOSE){reset}
+
+`)
 }

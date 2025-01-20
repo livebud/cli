@@ -4,6 +4,7 @@ type Flag struct {
 	name  string
 	help  string
 	short string
+	env   *string
 	value value
 }
 
@@ -11,8 +12,15 @@ func (f *Flag) key() string {
 	return "--" + f.name
 }
 
+// Short allows you to specify a short name for the flag.
 func (f *Flag) Short(short byte) *Flag {
 	f.short = string(short)
+	return f
+}
+
+// Env allows you to use an environment variable to set the value of the flag.
+func (f *Flag) Env(name string) *Flag {
+	f.env = &name
 	return f
 }
 
@@ -21,47 +29,40 @@ func (f *Flag) Optional() *OptionalFlag {
 }
 
 func (f *Flag) Int(target *int) *Int {
-	value := &Int{target: target}
+	value := &Int{target, f.env, nil}
 	f.value = &intValue{key: f.key(), inner: value}
 	return value
 }
 
 func (f *Flag) String(target *string) *String {
-	value := &String{target: target}
+	value := &String{target, f.env, nil}
 	f.value = &stringValue{key: f.key(), inner: value}
 	return value
 }
 
 func (f *Flag) Strings(target *[]string) *Strings {
 	*target = []string{}
-	value := &Strings{target: target}
+	value := &Strings{target, f.env, nil, false}
 	f.value = &stringsValue{key: f.key(), inner: value}
 	return value
 }
 
 func (f *Flag) Enum(target *string, possibilities ...string) *Enum {
-	value := &Enum{target: target}
+	value := &Enum{target, f.env, nil}
 	f.value = &enumValue{key: f.key(), inner: value, possibilities: possibilities}
 	return value
 }
 
 func (f *Flag) StringMap(target *map[string]string) *StringMap {
 	*target = map[string]string{}
-	value := &StringMap{target: target}
+	value := &StringMap{target, f.env, nil, false}
 	f.value = &stringMapValue{key: f.key(), inner: value}
 	return value
 }
 
 func (f *Flag) Bool(target *bool) *Bool {
-	value := &Bool{target: target}
+	value := &Bool{target, f.env, nil}
 	f.value = &boolValue{key: f.key(), inner: value}
-	return value
-}
-
-// Custom allows you to define a custom parsing function
-func (f *Flag) Custom(fn func(string) error) *Custom {
-	value := &Custom{target: fn}
-	f.value = &customValue{key: f.key(), inner: value}
 	return value
 }
 
@@ -78,32 +79,37 @@ func (f *OptionalFlag) key() string {
 }
 
 func (f *OptionalFlag) String(target **string) *OptionalString {
-	value := &OptionalString{target: target}
+	value := &OptionalString{target, f.f.env, nil}
 	f.f.value = &optionalStringValue{key: f.key(), inner: value}
 	return value
 }
 
 func (f *OptionalFlag) Int(target **int) *OptionalInt {
-	value := &OptionalInt{target: target}
+	value := &OptionalInt{target, f.f.env, nil}
 	f.f.value = &optionalIntValue{key: f.key(), inner: value}
 	return value
 }
 
 func (f *OptionalFlag) Bool(target **bool) *OptionalBool {
-	value := &OptionalBool{target: target}
+	value := &OptionalBool{target, f.f.env, nil}
 	f.f.value = &optionalBoolValue{key: f.key(), inner: value}
 	return value
 }
 
 func (f *OptionalFlag) Strings(target *[]string) *Strings {
-	*target = []string{}
-	value := &Strings{target: target, optional: true}
+	value := &Strings{target, f.f.env, nil, true}
 	f.f.value = &stringsValue{key: f.key(), inner: value}
 	return value
 }
 
+func (f *OptionalFlag) StringMap(target *map[string]string) *StringMap {
+	value := &StringMap{target, f.f.env, nil, true}
+	f.f.value = &stringMapValue{key: f.key(), inner: value}
+	return value
+}
+
 func (f *OptionalFlag) Enum(target **string, possibilities ...string) *OptionalEnum {
-	value := &OptionalEnum{target: target}
+	value := &OptionalEnum{target, f.f.env, nil}
 	f.f.value = &optionalEnumValue{key: f.key(), inner: value, possibilities: possibilities}
 	return value
 }

@@ -7,6 +7,7 @@ import (
 
 type Int struct {
 	target *int
+	envvar *string
 	defval *int
 }
 
@@ -40,11 +41,13 @@ func (v *intValue) Default() (string, bool) {
 func (v *intValue) verify() error {
 	if v.set {
 		return nil
+	} else if value, ok := lookupEnv(v.inner.envvar); ok {
+		return v.Set(value)
 	} else if v.hasDefault() {
 		*v.inner.target = *v.inner.defval
 		return nil
 	}
-	return fmt.Errorf("missing %s", v.key)
+	return &missingError{v.key, v.inner.envvar}
 }
 
 func (v *intValue) Set(val string) error {
@@ -70,6 +73,7 @@ func (v *intValue) String() string {
 
 type OptionalInt struct {
 	target **int
+	envvar *string
 	defval *int
 }
 
@@ -103,6 +107,8 @@ func (v *optionalIntValue) Default() (string, bool) {
 func (v *optionalIntValue) verify() error {
 	if v.set {
 		return nil
+	} else if value, ok := lookupEnv(v.inner.envvar); ok {
+		return v.Set(value)
 	} else if v.hasDefault() {
 		*v.inner.target = v.inner.defval
 		return nil

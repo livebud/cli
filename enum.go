@@ -8,11 +8,16 @@ import (
 
 type Enum struct {
 	target *string
+	envvar *string
 	defval *string // default value
 }
 
 func (v *Enum) Default(value string) {
 	v.defval = &value
+}
+
+func (v *Enum) Env(name string) {
+	v.envvar = &name
 }
 
 type enumValue struct {
@@ -42,6 +47,8 @@ func (v *enumValue) Default() (string, bool) {
 func (v *enumValue) verify() error {
 	if v.set {
 		return nil
+	} else if value, ok := lookupEnv(v.inner.envvar); ok {
+		return v.Set(value)
 	} else if v.hasDefault() {
 		if err := verifyEnum(v.key, *v.inner.defval, v.possibilities...); err != nil {
 			return err
@@ -49,7 +56,7 @@ func (v *enumValue) verify() error {
 		*v.inner.target = *v.inner.defval
 		return nil
 	}
-	return fmt.Errorf("missing %s", v.key)
+	return &missingError{v.key, v.inner.envvar}
 }
 
 func (v *enumValue) Set(val string) error {
@@ -74,11 +81,16 @@ func (v *enumValue) String() string {
 
 type OptionalEnum struct {
 	target **string
+	envvar *string
 	defval *string // default value
 }
 
 func (v *OptionalEnum) Default(value string) {
 	v.defval = &value
+}
+
+func (v *OptionalEnum) Env(name string) {
+	v.envvar = &name
 }
 
 type optionalEnumValue struct {
@@ -108,6 +120,8 @@ func (v *optionalEnumValue) Default() (string, bool) {
 func (v *optionalEnumValue) verify() error {
 	if v.set {
 		return nil
+	} else if value, ok := lookupEnv(v.inner.envvar); ok {
+		return v.Set(value)
 	} else if v.hasDefault() {
 		if err := verifyEnum(v.key, *v.inner.defval, v.possibilities...); err != nil {
 			return err

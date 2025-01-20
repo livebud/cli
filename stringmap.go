@@ -3,19 +3,19 @@ package cli
 import (
 	"fmt"
 	"strings"
+
+	"github.com/kballard/go-shellquote"
 )
 
 type StringMap struct {
-	target *map[string]string
-	defval *map[string]string // default value
+	target   *map[string]string
+	envvar   *string
+	defval   *map[string]string // default value
+	optional bool
 }
 
 func (v *StringMap) Default(value map[string]string) {
 	v.defval = &value
-}
-
-func (v *StringMap) Optional() {
-	v.defval = new(map[string]string)
 }
 
 type stringMapValue struct {
@@ -33,11 +33,24 @@ func (v *stringMapValue) optional() bool {
 func (v *stringMapValue) verify() error {
 	if v.set {
 		return nil
+	} else if value, ok := lookupEnv(v.inner.envvar); ok {
+		fields, err := shellquote.Split(value)
+		if err != nil {
+			return fmt.Errorf("%s: expected a string map but got %q", v.key, value)
+		}
+		for _, kv := range fields {
+			if err := v.Set(kv); err != nil {
+				return err
+			}
+		}
+		return nil
 	} else if v.hasDefault() {
 		*v.inner.target = *v.inner.defval
 		return nil
+	} else if v.inner.optional {
+		return nil
 	}
-	return fmt.Errorf("missing %s", v.key)
+	return &missingError{v.key, v.inner.envvar}
 }
 
 func (v *stringMapValue) hasDefault() bool {

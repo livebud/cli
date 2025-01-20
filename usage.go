@@ -191,15 +191,32 @@ type usageFlag struct {
 }
 
 func (u *usageFlag) Suffix() string {
+	attrs := []string{}
 	if def, ok := u.f.value.Default(); ok {
 		if def == "" {
-			return " (default: \"\")"
+			attrs = append(attrs, "default: \"\"")
+		} else {
+			attrs = append(attrs, "default: "+def)
 		}
-		return " (default: " + def + ")"
 	} else if u.f.value.optional() {
-		return " (optional)"
+		attrs = append(attrs, "optional")
 	}
-	return ""
+	if u.f.env != nil {
+		attrs = append(attrs, "env: "+*u.f.env)
+	}
+	if len(attrs) == 0 {
+		return ""
+	}
+	out := new(strings.Builder)
+	out.WriteString(" (")
+	for i, v := range attrs {
+		if i > 0 {
+			out.WriteString(", ")
+		}
+		out.WriteString(v)
+	}
+	out.WriteString(")")
+	return out.String()
 }
 
 type usageFlags []*usageFlag

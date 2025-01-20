@@ -91,6 +91,7 @@ func (c *command) parse(ctx context.Context, args []string) error {
 		}
 		return maybeTrimError(err)
 	}
+
 	// Check if the first argument is a subcommand
 	if sub, ok := c.commands[c.fset.Arg(0)]; ok {
 		return sub.parse(ctx, c.fset.Args()[1:])
@@ -141,16 +142,16 @@ loop:
 			return err
 		}
 	}
+	// Verify that all the flags have been set or have default values
+	if err := verifyFlags(c.flags); err != nil {
+		return err
+	}
 	// Print usage if there's no run function defined
 	if c.run == nil {
 		if len(restArgs) == 0 {
 			return c.printUsage()
 		}
 		return fmt.Errorf("%w: %s", ErrInvalidInput, c.fset.Arg(0))
-	}
-	// Verify that all the flags have been set or have default values
-	if err := verifyFlags(c.flags); err != nil {
-		return err
 	}
 	if err := c.run(ctx); err != nil {
 		// Support explicitly printing usage

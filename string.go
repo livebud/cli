@@ -1,9 +1,8 @@
 package cli
 
-import "fmt"
-
 type String struct {
 	target *string
+	envvar *string
 	defval *string // default value
 }
 
@@ -26,11 +25,13 @@ var _ value = (*stringValue)(nil)
 func (v *stringValue) verify() error {
 	if v.set {
 		return nil
+	} else if value, ok := lookupEnv(v.inner.envvar); ok {
+		return v.Set(value)
 	} else if v.hasDefault() {
 		*v.inner.target = *v.inner.defval
 		return nil
 	}
-	return fmt.Errorf("missing %s", v.key)
+	return &missingError{v.key, v.inner.envvar}
 }
 
 func (v *stringValue) hasDefault() bool {
@@ -63,6 +64,7 @@ func (v *stringValue) String() string {
 
 type OptionalString struct {
 	target **string
+	envvar *string
 	defval *string // default value
 }
 
@@ -96,6 +98,8 @@ func (v *optionalStringValue) Default() (string, bool) {
 func (v *optionalStringValue) verify() error {
 	if v.set {
 		return nil
+	} else if value, ok := lookupEnv(v.inner.envvar); ok {
+		return v.Set(value)
 	} else if v.hasDefault() {
 		*v.inner.target = v.inner.defval
 		return nil
