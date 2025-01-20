@@ -693,6 +693,50 @@ func TestFlagStringsDefault(t *testing.T) {
 	is.Equal(flags[1], "b")
 }
 
+func TestFlagStringsEmptyDefault(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flags []string
+	cli.Flag("flag", "cli flag").Strings(&flags).Default()
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(len(flags), 0)
+}
+
+func TestFlagStringsEmptyDefaultHelp(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flags []string
+	cli.Flag("flag", "cli flag").Strings(&flags).Default()
+	ctx := context.Background()
+	err := cli.Parse(ctx, "-h")
+	is.NoErr(err)
+	isEqual(t, actual.String(), `
+  {bold}Usage:{reset}
+    {dim}${reset} cli {dim}[flags]{reset}
+
+  {bold}Description:{reset}
+    desc
+
+  {bold}Flags:{reset}
+    --flag  {dim}cli flag (default: []){reset}
+
+`)
+}
+
 func TestFlagStringMap(t *testing.T) {
 	is := is.New(t)
 	actual := new(bytes.Buffer)
@@ -766,6 +810,50 @@ func TestFlagStringMapDefault(t *testing.T) {
 	is.Equal(len(flags), 2)
 	is.Equal(flags["a"], "1")
 	is.Equal(flags["b"], "2")
+}
+
+func TestFlagStringMapEmptyDefault(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flags map[string]string
+	cli.Flag("flag", "cli flag").StringMap(&flags).Default(map[string]string{})
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(len(flags), 0)
+}
+
+func TestFlagStringMapEmptyDefaultHelp(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flags map[string]string
+	cli.Flag("flag", "cli flag").StringMap(&flags).Default(map[string]string{})
+	ctx := context.Background()
+	err := cli.Parse(ctx, "-h")
+	is.NoErr(err)
+	isEqual(t, actual.String(), `
+  {bold}Usage:{reset}
+    {dim}${reset} cli {dim}[flags]{reset}
+
+  {bold}Description:{reset}
+    desc
+
+  {bold}Flags:{reset}
+    --flag  {dim}cli flag (default: {}){reset}
+
+`)
 }
 
 func TestArgsStringMap(t *testing.T) {

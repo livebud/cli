@@ -70,6 +70,9 @@ func (v *stringMapValue) Default() (string, bool) {
 		str.WriteString(k + ":" + v)
 		i++
 	}
+	if str.Len() == 0 {
+		return "{}", true
+	}
 	return str.String(), true
 }
 

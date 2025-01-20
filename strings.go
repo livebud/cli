@@ -61,7 +61,11 @@ func (v *stringsValue) Default() (string, bool) {
 	if v.inner.defval == nil {
 		return "", false
 	}
-	return strings.Join(*v.inner.defval, ", "), true
+	def := strings.Join(*v.inner.defval, ", ")
+	if def == "" {
+		return "[]", true
+	}
+	return def, true
 }
 
 func (v *stringsValue) Set(val string) error {
