@@ -1,6 +1,10 @@
+# 0.0.16 / 2025-04-19
+
+- fix so `--` appends an unparsed arg
+
 # 0.0.15 / 2025-04-19
 
-- ignore args after --
+- ignore args after `--`
 
 # 0.0.14 / 2025-01-20
 
