@@ -2706,7 +2706,7 @@ func TestDashDash(t *testing.T) {
 	is.NoErr(err)
 	is.Equal(1, called)
 	is.Equal(*w, "w")
-	is.Equal(x, nil)
+	is.Equal(*x, "-z z foo")
 	is.Equal(*y, "y")
 	is.Equal(z, nil)
 }
@@ -2729,7 +2729,7 @@ func TestDashDashNoArgs(t *testing.T) {
 	err := cli.Parse(ctx, "--", "w", "-y", "y", "-z", "z", "foo")
 	is.NoErr(err)
 	is.Equal(1, called)
-	is.Equal(w, nil)
+	is.Equal(*w, "w -y y -z z foo")
 	is.Equal(x, nil)
 	is.Equal(y, nil)
 	is.Equal(z, nil)

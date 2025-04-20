@@ -85,8 +85,10 @@ func (c *command) parse(ctx context.Context, args []string) error {
 	}
 
 	// Stop at the first "--" argument
+	afterDashes := []string{}
 	for i, arg := range args {
 		if arg == "--" {
+			afterDashes = args[i+1:]
 			args = args[:i]
 			break
 		}
@@ -119,6 +121,11 @@ func (c *command) parse(ctx context.Context, args []string) error {
 	restArgs, err := parseFlags(c.fset, restArgs)
 	if err != nil {
 		return err
+	}
+
+	// Add anything after -- as an arg
+	if len(afterDashes) > 0 {
+		restArgs = append(restArgs, strings.Join(afterDashes, " "))
 	}
 
 loop:
