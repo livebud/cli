@@ -1,3 +1,7 @@
+# 0.0.17 / 2025-04-19
+
+- fix -- for subcommands
+
 # 0.0.16 / 2025-04-19
 
 - fix so `--` appends an unparsed arg
