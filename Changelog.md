@@ -1,3 +1,7 @@
+# 0.0.15 / 2025-04-19
+
+- ignore args after --
+
 # 0.0.14 / 2025-01-20
 
 - better empty default values for string arrays and maps
