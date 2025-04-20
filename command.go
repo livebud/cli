@@ -83,6 +83,15 @@ func (c *command) parse(ctx context.Context, args []string) error {
 	if err := c.setFlags(); err != nil {
 		return err
 	}
+
+	// Stop at the first "--" argument
+	for i, arg := range args {
+		if arg == "--" {
+			args = args[:i]
+			break
+		}
+	}
+
 	// Parse the arguments
 	if err := c.fset.Parse(args); err != nil {
 		// Print usage if the developer used -h or --help

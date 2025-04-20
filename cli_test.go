@@ -2686,3 +2686,51 @@ func TestEnvHelp(t *testing.T) {
 
 `)
 }
+
+func TestDashDash(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var w, x, y, z *string
+	cli.Arg("w", "w arg").Optional().String(&w)
+	cli.Arg("x", "x arg").Optional().String(&x)
+	cli.Flag("y", "y flag").Optional().String(&y)
+	cli.Flag("z", "z flag").Optional().String(&z)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx, "w", "-y", "y", "--", "-z", "z", "foo")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(*w, "w")
+	is.Equal(x, nil)
+	is.Equal(*y, "y")
+	is.Equal(z, nil)
+}
+
+func TestDashDashNoArgs(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var w, x, y, z *string
+	cli.Arg("w", "w arg").Optional().String(&w)
+	cli.Arg("x", "x arg").Optional().String(&x)
+	cli.Flag("y", "y flag").Optional().String(&y)
+	cli.Flag("z", "z flag").Optional().String(&z)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx, "--", "w", "-y", "y", "-z", "z", "foo")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(w, nil)
+	is.Equal(x, nil)
+	is.Equal(y, nil)
+	is.Equal(z, nil)
+}
