@@ -85,10 +85,10 @@ func (c *command) parse(ctx context.Context, args []string) error {
 	}
 
 	// Stop at the first "--" argument
-	afterDashes := []string{}
+	var dashdash []string
 	for i, arg := range args {
 		if arg == "--" {
-			afterDashes = args[i+1:]
+			dashdash = args[i:]
 			args = args[:i]
 			break
 		}
@@ -105,8 +105,13 @@ func (c *command) parse(ctx context.Context, args []string) error {
 
 	// Check if the first argument is a subcommand
 	if sub, ok := c.commands[c.fset.Arg(0)]; ok {
-		return sub.parse(ctx, c.fset.Args()[1:])
+		subArgs := c.fset.Args()[1:]
+		if len(dashdash) > 0 {
+			subArgs = append(subArgs, dashdash...)
+		}
+		return sub.parse(ctx, subArgs)
 	}
+
 	// Handle the remaining arguments
 	numArgs := len(c.args)
 	restArgs := c.fset.Args()
@@ -123,9 +128,9 @@ func (c *command) parse(ctx context.Context, args []string) error {
 		return err
 	}
 
-	// Add anything after -- as an arg
-	if len(afterDashes) > 0 {
-		restArgs = append(restArgs, strings.Join(afterDashes, " "))
+	// Add anything after -- as a single argument
+	if len(dashdash) > 0 {
+		restArgs = append(restArgs, strings.Join(dashdash[1:], " "))
 	}
 
 loop:

@@ -2734,3 +2734,25 @@ func TestDashDashNoArgs(t *testing.T) {
 	is.Equal(y, nil)
 	is.Equal(z, nil)
 }
+
+func TestCommandDashDash(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("dev", "dev command").Writer(actual)
+	cmd := cli.Command("watch", "watch command")
+	var clear bool
+	cmd.Flag("clear", "clear").Bool(&clear)
+	var command string
+	cmd.Arg("command", "command to watch").String(&command)
+	cmd.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx, "watch", "--clear", "--", "go", "test", "./mktempl", "-v", "-failfast", "-run", "TestParse/multiple-packages")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(clear, true)
+	is.Equal(command, "go test ./mktempl -v -failfast -run TestParse/multiple-packages")
+}
