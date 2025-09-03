@@ -1,3 +1,9 @@
+# 0.0.20 / 2025-09-02
+
+- update test to verify env error
+- add `$` to missing input error
+- handle `$` prefix in `.Env($ENV_VAR)`
+
 # 0.0.19 / 2025-09-02
 
 - bump up go and run modernize
