@@ -434,7 +434,7 @@ func TestFlagStringRequired(t *testing.T) {
 		return nil
 	})
 	var flag string
-	cli.Flag("flag", "cli flag").Env("FLAG").String(&flag)
+	cli.Flag("flag", "cli flag").Env("$FLAG").String(&flag)
 	ctx := context.Background()
 	err := cli.Parse(ctx)
 	is.True(err != nil)
