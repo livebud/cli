@@ -31,7 +31,7 @@ func (v *stringValue) verify() error {
 		*v.inner.target = *v.inner.defval
 		return nil
 	}
-	return &missingError{v.key, v.inner.envvar}
+	return &missingInputError{v.key, v.inner.envvar}
 }
 
 func (v *stringValue) hasDefault() bool {

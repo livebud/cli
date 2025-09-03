@@ -154,18 +154,18 @@ func lookupEnv(key *string) (string, bool) {
 	return os.LookupEnv(*key)
 }
 
-type missingError struct {
+type missingInputError struct {
 	Key string
 	Env *string
 }
 
-func (m *missingError) Error() string {
+func (m *missingInputError) Error() string {
 	s := new(strings.Builder)
 	s.WriteString("missing ")
 	s.WriteString(m.Key)
 	if m.Env != nil {
 		s.WriteString(" or ")
-		s.WriteString(*m.Env)
+		s.WriteString("$" + *m.Env)
 		s.WriteString(" environment variable")
 	}
 	return s.String()

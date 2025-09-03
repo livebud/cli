@@ -50,7 +50,7 @@ func (v *stringMapValue) verify() error {
 	} else if v.inner.optional {
 		return nil
 	}
-	return &missingError{v.key, v.inner.envvar}
+	return &missingInputError{v.key, v.inner.envvar}
 }
 
 func (v *stringMapValue) hasDefault() bool {

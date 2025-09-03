@@ -50,7 +50,7 @@ func (v *stringsValue) verify() error {
 	} else if v.inner.optional {
 		return nil
 	}
-	return &missingError{v.key, v.inner.envvar}
+	return &missingInputError{v.key, v.inner.envvar}
 }
 
 func (v *stringsValue) hasDefault() bool {

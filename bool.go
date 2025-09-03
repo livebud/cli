@@ -47,7 +47,7 @@ func (v *boolValue) verify() error {
 		*v.inner.target = *v.inner.defval
 		return nil
 	}
-	return &missingError{v.key, v.inner.envvar}
+	return &missingInputError{v.key, v.inner.envvar}
 }
 
 func (v *boolValue) Set(val string) (err error) {

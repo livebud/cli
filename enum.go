@@ -57,7 +57,7 @@ func (v *enumValue) verify() error {
 		*v.inner.target = *v.inner.defval
 		return nil
 	}
-	return &missingError{v.key, v.inner.envvar}
+	return &missingInputError{v.key, v.inner.envvar}
 }
 
 func (v *enumValue) Set(val string) error {
