@@ -1,5 +1,7 @@
 package cli
 
+import "strings"
+
 type Flag struct {
 	name  string
 	help  string
@@ -20,6 +22,7 @@ func (f *Flag) Short(short byte) *Flag {
 
 // Env allows you to use an environment variable to set the value of the flag.
 func (f *Flag) Env(name string) *Flag {
+	name = strings.TrimPrefix(name, "$")
 	f.env = &name
 	return f
 }
