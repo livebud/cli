@@ -1,3 +1,7 @@
+# 0.0.18 / 2025-09-02
+
+- don't panic with missing value setter. minor usage improvement
+
 # 0.0.17 / 2025-04-19
 
 - fix -- for subcommands
