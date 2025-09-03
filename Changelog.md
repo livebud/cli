@@ -1,3 +1,7 @@
+# 0.0.19 / 2025-09-02
+
+- bump up go and run modernize
+
 # 0.0.18 / 2025-09-02
 
 - don't panic with missing value setter. minor usage improvement
