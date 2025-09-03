@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"flag"
 	"sort"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 	"text/template"
@@ -89,7 +90,7 @@ type usageArg struct {
 
 func (a *usageArg) Suffix() string {
 	if def, ok := a.a.value.Default(); ok {
-		return " (default: " + def + ")"
+		return " (default:" + strconv.Quote(def) + ")"
 	} else if a.a.value.optional() {
 		return " (optional)"
 	}
@@ -192,17 +193,13 @@ type usageFlag struct {
 
 func (u *usageFlag) Suffix() string {
 	attrs := []string{}
+	if u.f.env != nil {
+		attrs = append(attrs, "or $"+*u.f.env)
+	}
 	if def, ok := u.f.value.Default(); ok {
-		if def == "" {
-			attrs = append(attrs, "default: \"\"")
-		} else {
-			attrs = append(attrs, "default: "+def)
-		}
+		attrs = append(attrs, "default:"+strconv.Quote(def))
 	} else if u.f.value.optional() {
 		attrs = append(attrs, "optional")
-	}
-	if u.f.env != nil {
-		attrs = append(attrs, "env: "+*u.f.env)
 	}
 	if len(attrs) == 0 {
 		return ""

@@ -64,6 +64,8 @@ func (c *command) setFlags() error {
 	for _, flag := range c.flags {
 		if seen[flag.name] {
 			return fmt.Errorf("%w %q command contains a duplicate flag \"--%s\"", ErrInvalidInput, c.full, flag.name)
+		} else if flag.value == nil {
+			return fmt.Errorf("%w %q command flag %q is missing a value setter", ErrInvalidInput, c.full, flag.name)
 		}
 		seen[flag.name] = true
 		c.fset.Var(flag.value, flag.name, flag.help)

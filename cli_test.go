@@ -214,7 +214,7 @@ func TestHerokuHelpPs(t *testing.T) {
   {bold}Flags:{reset}
     -a, --app     {dim}app to run command against{reset}
     -r, --remote  {dim}git remote of app to use (optional){reset}
-    --json        {dim}output in json format (default: false){reset}
+    --json        {dim}output in json format (default:"false"){reset}
 
   {bold}Commands:{reset}
     autoscale  {dim}enable autoscaling for an app{reset}
@@ -240,7 +240,7 @@ func TestHerokuHelpPsAutoscale(t *testing.T) {
   {bold}Flags:{reset}
     -a, --app     {dim}app to run command against{reset}
     -r, --remote  {dim}git remote of app to use (optional){reset}
-    --json        {dim}output in json format (default: false){reset}
+    --json        {dim}output in json format (default:"false"){reset}
 
   {bold}Commands:{reset}
     disable  {dim}disable autoscaling for an app{reset}
@@ -266,7 +266,7 @@ func TestHerokuHelpPsAutoscaleEnable(t *testing.T) {
   {bold}Flags:{reset}
     -a, --app        {dim}app to run command against{reset}
     -r, --remote     {dim}git remote of app to use (optional){reset}
-    --json           {dim}output in json format (default: false){reset}
+    --json           {dim}output in json format (default:"false"){reset}
     --max            {dim}maximum number of dynos{reset}
     --min            {dim}minimum number of dynos{reset}
     --notifications  {dim}comma-separated list of notifications to enable{reset}
@@ -327,7 +327,7 @@ func TestHelpArgs(t *testing.T) {
 
   {bold}Args:{reset}
     <src>  {dim}source{reset}
-    <dst>  {dim}destination (default: .){reset}
+    <dst>  {dim}destination (default:"."){reset}
 
 `)
 }
@@ -419,7 +419,7 @@ func TestFlagStringEmptyDefault(t *testing.T) {
     desc
 
   {bold}Flags:{reset}
-    --flag  {dim}cli flag (default: ""){reset}
+    --flag  {dim}cli flag (default:""){reset}
 
 `)
 }
@@ -732,7 +732,7 @@ func TestFlagStringsEmptyDefaultHelp(t *testing.T) {
     desc
 
   {bold}Flags:{reset}
-    --flag  {dim}cli flag (default: []){reset}
+    --flag  {dim}cli flag (default:"[]"){reset}
 
 `)
 }
@@ -851,7 +851,7 @@ func TestFlagStringMapEmptyDefaultHelp(t *testing.T) {
     desc
 
   {bold}Flags:{reset}
-    --flag  {dim}cli flag (default: {}){reset}
+    --flag  {dim}cli flag (default:"{}"){reset}
 
 `)
 }
@@ -1033,8 +1033,8 @@ func TestSubHelpShort(t *testing.T) {
     bud CLI
 
   {bold}Flags:{reset}
-    -L, --log  {dim}specify the logger (default: false){reset}
-    --debug    {dim}set the debugger (default: true){reset}
+    -L, --log  {dim}specify the logger (default:"false"){reset}
+    --debug    {dim}set the debugger (default:"true"){reset}
 
   {bold}Commands:{reset}
     build  {dim}build your application{reset}
@@ -1302,7 +1302,7 @@ func TestManualHelpUsage(t *testing.T) {
 
   {bold}Flags:{reset}
     -C, --chdir  {dim}change directory{reset}
-    -h, --help   {dim}help menu (default: false){reset}
+    -h, --help   {dim}help menu (default:"false"){reset}
 
 `)
 }
@@ -2677,12 +2677,12 @@ func TestEnvHelp(t *testing.T) {
     cli command
 
   {bold}Flags:{reset}
-    --arr      {dim}arr (env: ARR){reset}
-    --dir      {dim}dir (env: DIR){reset}
-    --log      {dim}log level (default: info, env: LOG){reset}
-    --mp       {dim}mp (env: MP){reset}
-    --n        {dim}n (env: N){reset}
-    --verbose  {dim}verbose (env: VERBOSE){reset}
+    --arr      {dim}arr (or $ARR){reset}
+    --dir      {dim}dir (or $DIR){reset}
+    --log      {dim}log level (or $LOG, default:"info"){reset}
+    --mp       {dim}mp (or $MP){reset}
+    --n        {dim}n (or $N){reset}
+    --verbose  {dim}verbose (or $VERBOSE){reset}
 
 `)
 }
@@ -2755,4 +2755,20 @@ func TestCommandDashDash(t *testing.T) {
 	is.Equal(1, called)
 	is.Equal(clear, true)
 	is.Equal(command, "go test ./mktempl -v -failfast -run TestParse/multiple-packages")
+}
+
+func TestMissingSetter(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	cli.Flag("flag", "cli flag")
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.True(err != nil)
+	is.Equal(err.Error(), `cli: invalid input "cli" command flag "flag" is missing a value setter`)
 }
