@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -153,10 +154,8 @@ func (v *optionalEnumValue) String() string {
 }
 
 func verifyEnum(key, val string, possibilities ...string) error {
-	for _, p := range possibilities {
-		if p == val {
-			return nil
-		}
+	if slices.Contains(possibilities, val) {
+		return nil
 	}
 	s := new(strings.Builder)
 	lp := len(possibilities)

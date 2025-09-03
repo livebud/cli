@@ -46,8 +46,8 @@ func equal(t testing.TB, expect, actual string) {
 	t.Fatal(diff.String(expect, actual))
 }
 
-func encode(w io.Writer, cmd, in interface{}) error {
-	return json.NewEncoder(w).Encode(map[string]interface{}{
+func encode(w io.Writer, cmd, in any) error {
+	return json.NewEncoder(w).Encode(map[string]any{
 		"cmd": cmd,
 		"in":  in,
 	})
