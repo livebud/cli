@@ -2772,3 +2772,103 @@ func TestMissingSetter(t *testing.T) {
 	is.True(err != nil)
 	is.Equal(err.Error(), `cli: invalid input "cli" command flag "flag" is missing a value setter`)
 }
+
+func TestMissingRunTriggersHelp(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	cli := cli.New("cli", "desc").Writer(actual)
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	isEqual(t, actual.String(), `
+  {bold}Usage:{reset}
+    {dim}${reset} cli
+
+  {bold}Description:{reset}
+    desc
+
+`)
+}
+
+func TestMiddlewareOrder(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	cli := cli.New("cli", "middleware order").Writer(actual)
+	trace := []string{}
+	cli.Use(func(next func(ctx context.Context) error) func(ctx context.Context) error {
+		return func(ctx context.Context) error {
+			trace = append(trace, "root-mw")
+			return next(ctx)
+		}
+	})
+	{
+		sub := cli.Command("sub", "sub command")
+		sub.Use(func(next func(ctx context.Context) error) func(ctx context.Context) error {
+			return func(ctx context.Context) error {
+				trace = append(trace, "sub-mw")
+				return next(ctx)
+			}
+		})
+		sub.Use(func(next func(ctx context.Context) error) func(ctx context.Context) error {
+			return func(ctx context.Context) error {
+				trace = append(trace, "sub-mw-2")
+				return next(ctx)
+			}
+		})
+		sub.Run(func(ctx context.Context) error {
+			trace = append(trace, "sub-run")
+			return nil
+		})
+	}
+	ctx := context.Background()
+	err := cli.Parse(ctx, "sub")
+	is.NoErr(err)
+	is.Equal(trace, []string{"sub-mw", "sub-mw-2", "sub-run"})
+}
+
+func TestMiddlewareError(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	cli := cli.New("cli", "middleware error").Writer(actual)
+	trace := []string{}
+	cli.Use(func(next func(ctx context.Context) error) func(ctx context.Context) error {
+		return func(ctx context.Context) error {
+			trace = append(trace, "mw")
+			return errors.New("stop")
+		}
+	})
+	cli.Run(func(ctx context.Context) error {
+		trace = append(trace, "run")
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.True(err != nil)
+	is.Equal(err.Error(), "stop")
+	is.Equal(trace, []string{"mw"})
+}
+
+func TestMiddlewareContext(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	cli := cli.New("cli", "middleware context").Writer(actual)
+	type key string
+	const testKey key = "test"
+	cli.Use(func(next func(ctx context.Context) error) func(ctx context.Context) error {
+		return func(ctx context.Context) error {
+			ctx = context.WithValue(ctx, testKey, "value")
+			return next(ctx)
+		}
+	})
+	cli.Run(func(ctx context.Context) error {
+		val := ctx.Value(testKey)
+		if valStr, ok := val.(string); ok {
+			actual.WriteString(valStr)
+		}
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(actual.String(), "value")
+}

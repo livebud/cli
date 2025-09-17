@@ -15,6 +15,8 @@ import (
 var ErrInvalidInput = errors.New("cli: invalid input")
 var ErrCommandNotFound = errors.New("cli: command not found")
 
+type Middleware = func(next func(ctx context.Context) error) func(ctx context.Context) error
+
 type Command interface {
 	Command(name, help string) Command
 	Hidden() Command
@@ -22,6 +24,7 @@ type Command interface {
 	Flag(name, help string) *Flag
 	Arg(name, help string) *Arg
 	Args(name, help string) *Args
+	Use(middlewares ...Middleware) Command
 	Run(runner func(ctx context.Context) error)
 }
 
@@ -104,6 +107,10 @@ func (c *CLI) Args(name, help string) *Args {
 
 func (c *CLI) Run(runner func(ctx context.Context) error) {
 	c.root.Run(runner)
+}
+
+func (c *CLI) Use(middlewares ...Middleware) Command {
+	return c.root.Use(middlewares...)
 }
 
 func (c *CLI) Find(subcommand ...string) (Command, error) {

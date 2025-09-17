@@ -26,6 +26,7 @@ func newCommand(config *config, flags []*Flag, name, full, help string) *command
 type command struct {
 	config *config
 	fset   *flag.FlagSet
+	stack  []Middleware
 	run    func(ctx context.Context) error
 	parsed bool
 
@@ -176,7 +177,12 @@ loop:
 		}
 		return fmt.Errorf("%w: %s", ErrInvalidInput, c.fset.Arg(0))
 	}
-	if err := c.run(ctx); err != nil {
+
+	// Compose the middlewares
+	run := compose(c.run, c.stack...)
+
+	// Run the command
+	if err := run(ctx); err != nil {
 		// Support explicitly printing usage
 		if errors.Is(err, flag.ErrHelp) {
 			return c.printUsage()
@@ -188,6 +194,11 @@ loop:
 
 func (c *command) Run(runner func(ctx context.Context) error) {
 	c.run = runner
+}
+
+func (c *command) Use(middlewares ...Middleware) Command {
+	c.stack = append(c.stack, middlewares...)
+	return c
 }
 
 func (c *command) Command(name, help string) Command {
@@ -316,4 +327,15 @@ func maybeTrimInvalidBooleanValue(msg string) int {
 	}
 	i2 += 2
 	return i1 + i2
+}
+
+func compose(run func(ctx context.Context) error, middlewares ...Middleware) func(ctx context.Context) error {
+	if run == nil {
+		return nil
+	}
+	// apply in reverse so that the first middleware in the slice is executed first
+	for i := len(middlewares) - 1; i >= 0; i-- {
+		run = middlewares[i](run)
+	}
+	return run
 }
