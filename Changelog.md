@@ -1,3 +1,9 @@
+# 0.0.21 / 2025-09-17
+
+- remove unused version
+- when calling the CLI with go run or go test, don't trap os.Interrupt by default to avoid "double Ctrl-C" problem
+- add support for command middleware
+
 # 0.0.20 / 2025-09-02
 
 - update test to verify env error
