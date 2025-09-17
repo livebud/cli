@@ -30,7 +30,7 @@ type Command interface {
 }
 
 func New(name, help string) *CLI {
-	config := &config{"", os.Stdout, defaultUsage, defaultSignals()}
+	config := &config{os.Stdout, defaultUsage, defaultSignals()}
 	return &CLI{newCommand(config, []*Flag{}, name, name, help), config}
 }
 
@@ -42,7 +42,6 @@ type CLI struct {
 var _ Command = (*CLI)(nil)
 
 type config struct {
-	version string
 	writer  io.Writer
 	usage   *template.Template
 	signals []os.Signal
@@ -53,13 +52,8 @@ func (c *CLI) Writer(writer io.Writer) *CLI {
 	return c
 }
 
-func (c *CLI) Version(version string) *CLI {
-	c.config.version = version
-	return c
-}
-
-func (c *CLI) Template(template *template.Template) *CLI {
-	c.config.usage = template
+func (c *CLI) Usage(usage *template.Template) *CLI {
+	c.config.usage = usage
 	return c
 }
 
