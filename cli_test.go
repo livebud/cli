@@ -15,6 +15,7 @@ import (
 	"github.com/livebud/cli"
 	"github.com/matryer/is"
 	"github.com/matthewmueller/diff"
+	"github.com/matthewmueller/testchild"
 )
 
 func isEqual(t testing.TB, actual, expected string) {
@@ -1124,20 +1125,9 @@ func TestSubArgString(t *testing.T) {
 // "Advanced Testing with Go" talk. We use stdout to synchronize between the
 // process and subprocess.
 func TestInterrupt(t *testing.T) {
-	is := is.New(t)
-	if value := os.Getenv("TEST_INTERRUPT"); value == "" {
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-		// Ignore -test.count otherwise this will continue recursively
-		var args []string
-		for _, arg := range os.Args[1:] {
-			if strings.HasPrefix(arg, "-test.count=") {
-				continue
-			}
-			args = append(args, arg)
-		}
-		cmd := exec.CommandContext(ctx, os.Args[0], append(args, "-test.v=true", "-test.run=^TestInterrupt$")...)
-		cmd.Env = append(os.Environ(), "TEST_INTERRUPT=1")
+	// Start the CLI and cancel it once "ready" is printed.
+	parent := func(t testing.TB, cmd *exec.Cmd) {
+		is := is.New(t)
 		stdout, err := cmd.StdoutPipe()
 		is.NoErr(err)
 		cmd.Stderr = os.Stderr
@@ -1159,22 +1149,28 @@ func TestInterrupt(t *testing.T) {
 		if err := cmd.Wait(); err != nil {
 			is.True(errors.Is(err, context.Canceled))
 		}
-		return
 	}
-	cli := cli.New("cli", "cli command")
-	cli.Run(func(ctx context.Context) error {
-		os.Stdout.Write([]byte("ready\n"))
-		<-ctx.Done()
-		os.Stdout.Write([]byte("cancelled\n"))
-		return nil
-	})
-	ctx := context.Background()
-	if err := cli.Parse(ctx); err != nil {
-		if errors.Is(err, context.Canceled) {
-			return
+
+	// The CLI that we run in the subprocess.
+	child := func(t testing.TB) {
+		is := is.New(t)
+		cli := cli.New("cli", "cli command").Trap(os.Interrupt)
+		cli.Run(func(ctx context.Context) error {
+			os.Stdout.Write([]byte("ready\n"))
+			<-ctx.Done()
+			os.Stdout.Write([]byte("cancelled\n"))
+			return nil
+		})
+		ctx := context.Background()
+		if err := cli.Parse(ctx); err != nil {
+			if errors.Is(err, context.Canceled) {
+				return
+			}
+			is.NoErr(err)
 		}
-		is.NoErr(err)
 	}
+
+	testchild.Run(t, parent, child)
 }
 
 // TODO: example support

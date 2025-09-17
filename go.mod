@@ -6,6 +6,7 @@ require (
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/matryer/is v1.4.1
 	github.com/matthewmueller/diff v0.0.3
+	github.com/matthewmueller/testchild v0.0.1
 )
 
 require (

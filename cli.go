@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"text/template"
 )
@@ -29,7 +30,7 @@ type Command interface {
 }
 
 func New(name, help string) *CLI {
-	config := &config{"", os.Stdout, defaultUsage, []os.Signal{os.Interrupt}}
+	config := &config{"", os.Stdout, defaultUsage, defaultSignals()}
 	return &CLI{newCommand(config, []*Flag{}, name, name, help), config}
 }
 
@@ -57,12 +58,14 @@ func (c *CLI) Version(version string) *CLI {
 	return c
 }
 
-func (c *CLI) Template(template *template.Template) {
+func (c *CLI) Template(template *template.Template) *CLI {
 	c.config.usage = template
+	return c
 }
 
-func (c *CLI) Trap(signals ...os.Signal) {
+func (c *CLI) Trap(signals ...os.Signal) *CLI {
 	c.config.signals = signals
+	return c
 }
 
 func (c *CLI) Parse(ctx context.Context, args ...string) error {
@@ -176,4 +179,19 @@ func (m *missingInputError) Error() string {
 		s.WriteString(" environment variable")
 	}
 	return s.String()
+}
+
+// If called from `go run` or `go test` don't trap any signals by default. This
+// avoids the "double Ctrl-C" problem where the user has to hit Ctrl-C twice to
+// exit the program.
+func defaultSignals() []os.Signal {
+	exe, err := os.Executable()
+	if err != nil {
+		return []os.Signal{os.Interrupt}
+	}
+	if strings.Contains(exe, string(filepath.Separator)+"go-build") {
+		return []os.Signal{}
+	}
+	// Otherwise, trap interrupts by default
+	return []os.Signal{os.Interrupt}
 }
