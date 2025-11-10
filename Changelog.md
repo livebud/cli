@@ -1,3 +1,7 @@
+# 0.0.22 / 2025-11-10
+
+- fix handling argument -, e.g. `$ base58 -`
+
 # 0.0.21 / 2025-09-17
 
 - remove unused version
