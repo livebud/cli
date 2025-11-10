@@ -2868,3 +2868,21 @@ func TestMiddlewareContext(t *testing.T) {
 	is.NoErr(err)
 	is.Equal(actual.String(), "value")
 }
+
+func TestArgDash(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var s string
+	cli.Arg("s", "string arg").String(&s)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx, "-")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(s, "-")
+}

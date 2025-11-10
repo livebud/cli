@@ -267,9 +267,13 @@ func (c *command) Find(cmds ...string) (*command, bool) {
 	return sub.Find(cmds[1:]...)
 }
 
+func isFlag(arg string) bool {
+	return strings.HasPrefix(arg, "-") && strings.TrimLeft(arg, "-") != ""
+}
+
 func parseFlags(fset *flag.FlagSet, args []string) (rest []string, err error) {
 	for i, arg := range args {
-		if !strings.HasPrefix(arg, "-") {
+		if !isFlag(arg) {
 			rest = append(rest, arg)
 			continue
 		}
