@@ -1,5 +1,7 @@
 package cli
 
+import "time"
+
 type Args struct {
 	name  string
 	help  string
@@ -32,6 +34,13 @@ func (a *Args) Strings(target *[]string) *Strings {
 	return value
 }
 
+func (a *Args) Durations(target *[]time.Duration) *Durations {
+	*target = []time.Duration{}
+	value := &Durations{target, a.env, nil, false}
+	a.value = &durationsValue{key: a.key(), inner: value}
+	return value
+}
+
 func (a *Args) StringMap(target *map[string]string) *StringMap {
 	*target = map[string]string{}
 	value := &StringMap{target, a.env, nil, false}
@@ -50,6 +59,13 @@ func (a *OptionalArgs) key() string {
 func (a *OptionalArgs) Strings(target *[]string) *Strings {
 	value := &Strings{target, a.a.env, nil, true}
 	a.a.value = &stringsValue{key: a.key(), inner: value}
+	return value
+}
+
+func (a *OptionalArgs) Durations(target *[]time.Duration) *Durations {
+	*target = []time.Duration{}
+	value := &Durations{target, a.a.env, nil, true}
+	a.a.value = &durationsValue{key: a.key(), inner: value}
 	return value
 }
 

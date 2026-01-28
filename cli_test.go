@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/livebud/cli"
 	"github.com/matryer/is"
@@ -525,6 +526,95 @@ func TestFlagIntRequired(t *testing.T) {
 	})
 	var flag int
 	cli.Flag("flag", "cli flag").Int(&flag)
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.True(err != nil)
+	is.Equal(err.Error(), "missing --flag")
+}
+
+func TestFlagDuration(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag time.Duration
+	cli.Flag("flag", "cli flag").Duration(&flag)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "--flag", "10s")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(flag, 10*time.Second)
+	isEqual(t, actual.String(), ``)
+}
+
+func TestFlagDurationInvalid(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag time.Duration
+	cli.Flag("flag", "cli flag").Duration(&flag)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "--flag", "hi")
+	is.True(err != nil)
+	is.Equal(err.Error(), `--flag: expected a duration but got "hi"`)
+}
+
+func TestFlagOptionalDurationInvalid(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag *time.Duration
+	cli.Flag("flag", "cli flag").Optional().Duration(&flag)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "--flag", "hi")
+	is.True(err != nil)
+	is.Equal(err.Error(), `--flag: expected a duration but got "hi"`)
+}
+
+func TestFlagDurationDefault(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag time.Duration
+	cli.Flag("flag", "cli flag").Duration(&flag).Default(10 * time.Second)
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(flag, 10*time.Second)
+	isEqual(t, actual.String(), ``)
+}
+
+func TestFlagDurationRequired(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag time.Duration
+	cli.Flag("flag", "cli flag").Duration(&flag)
 	ctx := context.Background()
 	err := cli.Parse(ctx)
 	is.True(err != nil)
@@ -1586,6 +1676,60 @@ func TestFlagOptionalIntNil(t *testing.T) {
 	is.Equal(i, nil)
 }
 
+func TestFlagOptionalDuration(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var d *time.Duration
+	cli.Flag("d", "duration").Optional().Duration(&d)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx, "--d=1m")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(*d, time.Minute)
+}
+
+func TestFlagOptionalDurationDefault(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var d *time.Duration
+	cli.Flag("d", "duration").Optional().Duration(&d).Default(time.Minute)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(*d, time.Minute)
+}
+
+func TestFlagOptionalDurationNil(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var d *time.Duration
+	cli.Flag("d", "duration").Optional().Duration(&d)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(d, nil)
+}
+
 func TestArgOptionalString(t *testing.T) {
 	is := is.New(t)
 	actual := new(bytes.Buffer)
@@ -1764,6 +1908,236 @@ func TestArgOptionalIntNil(t *testing.T) {
 	is.NoErr(err)
 	is.Equal(1, called)
 	is.Equal(i, nil)
+}
+
+func TestArgDuration(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var arg time.Duration
+	cli.Arg("arg", "duration arg").Duration(&arg)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "5m")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(arg, 5*time.Minute)
+	isEqual(t, actual.String(), ``)
+}
+
+func TestArgDurationDefault(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var arg time.Duration
+	cli.Arg("arg", "duration arg").Duration(&arg).Default(5 * time.Minute)
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(arg, 5*time.Minute)
+	isEqual(t, actual.String(), ``)
+}
+
+func TestArgDurationRequired(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var arg time.Duration
+	cli.Arg("arg", "duration arg").Duration(&arg)
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.True(err != nil)
+	is.Equal(err.Error(), "missing <arg>")
+}
+
+func TestArgOptionalDuration(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var d *time.Duration
+	cli.Arg("d", "duration arg").Optional().Duration(&d)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx, "1h")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(*d, time.Hour)
+}
+
+func TestArgOptionalDurationDefault(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var d *time.Duration
+	cli.Arg("d", "duration arg").Optional().Duration(&d).Default(time.Hour)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(*d, time.Hour)
+}
+
+func TestArgOptionalDurationNil(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var d *time.Duration
+	cli.Arg("d", "duration arg").Optional().Duration(&d)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(d, nil)
+}
+
+func TestArgsDurations(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var args []time.Duration
+	cli.Args("durations", "duration args").Durations(&args)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "1s", "2m", "3h")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(len(args), 3)
+	is.Equal(args[0], time.Second)
+	is.Equal(args[1], 2*time.Minute)
+	is.Equal(args[2], 3*time.Hour)
+	isEqual(t, actual.String(), ``)
+}
+
+func TestArgsDurationsDefault(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var args []time.Duration
+	cli.Args("durations", "duration args").Durations(&args).Default(time.Second, time.Minute)
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(len(args), 2)
+	is.Equal(args[0], time.Second)
+	is.Equal(args[1], time.Minute)
+	isEqual(t, actual.String(), ``)
+}
+
+func TestArgsDurationsRequired(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var args []time.Duration
+	cli.Args("durations", "duration args").Durations(&args)
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.True(err != nil)
+	is.Equal(err.Error(), "missing <durations...>")
+}
+
+func TestArgsOptionalDurations(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var args []time.Duration
+	cli.Args("durations", "duration args").Optional().Durations(&args)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "10s", "20s")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(len(args), 2)
+	is.Equal(args[0], 10*time.Second)
+	is.Equal(args[1], 20*time.Second)
+	isEqual(t, actual.String(), ``)
+}
+
+func TestArgsOptionalDurationsDefault(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var args []time.Duration
+	cli.Args("durations", "duration args").Optional().Durations(&args).Default(10*time.Second, 20*time.Second)
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(len(args), 2)
+	is.Equal(args[0], 10*time.Second)
+	is.Equal(args[1], 20*time.Second)
+	isEqual(t, actual.String(), ``)
+}
+
+func TestArgsOptionalDurationsEmpty(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var args []time.Duration
+	cli.Args("durations", "duration args").Optional().Durations(&args)
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(len(args), 0)
+	isEqual(t, actual.String(), ``)
 }
 
 func TestFlagOptionalStrings(t *testing.T) {

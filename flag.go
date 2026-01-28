@@ -1,6 +1,9 @@
 package cli
 
-import "strings"
+import (
+	"strings"
+	"time"
+)
 
 type Flag struct {
 	name  string
@@ -37,6 +40,12 @@ func (f *Flag) Int(target *int) *Int {
 	return value
 }
 
+func (f *Flag) Duration(target *time.Duration) *Duration {
+	value := &Duration{target, f.env, nil}
+	f.value = &durationValue{key: f.key(), inner: value}
+	return value
+}
+
 func (f *Flag) String(target *string) *String {
 	value := &String{target, f.env, nil}
 	f.value = &stringValue{key: f.key(), inner: value}
@@ -47,6 +56,13 @@ func (f *Flag) Strings(target *[]string) *Strings {
 	*target = []string{}
 	value := &Strings{target, f.env, nil, false}
 	f.value = &stringsValue{key: f.key(), inner: value}
+	return value
+}
+
+func (f *Flag) Durations(target *[]time.Duration) *Durations {
+	*target = []time.Duration{}
+	value := &Durations{target, f.env, nil, false}
+	f.value = &durationsValue{key: f.key(), inner: value}
 	return value
 }
 
@@ -93,6 +109,12 @@ func (f *OptionalFlag) Int(target **int) *OptionalInt {
 	return value
 }
 
+func (f *OptionalFlag) Duration(target **time.Duration) *OptionalDuration {
+	value := &OptionalDuration{target, f.f.env, nil}
+	f.f.value = &optionalDurationValue{key: f.key(), inner: value}
+	return value
+}
+
 func (f *OptionalFlag) Bool(target **bool) *OptionalBool {
 	value := &OptionalBool{target, f.f.env, nil}
 	f.f.value = &optionalBoolValue{key: f.key(), inner: value}
@@ -102,6 +124,13 @@ func (f *OptionalFlag) Bool(target **bool) *OptionalBool {
 func (f *OptionalFlag) Strings(target *[]string) *Strings {
 	value := &Strings{target, f.f.env, nil, true}
 	f.f.value = &stringsValue{key: f.key(), inner: value}
+	return value
+}
+
+func (f *OptionalFlag) Durations(target *[]time.Duration) *Durations {
+	*target = []time.Duration{}
+	value := &Durations{target, f.f.env, nil, true}
+	f.f.value = &durationsValue{key: f.key(), inner: value}
 	return value
 }
 

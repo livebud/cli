@@ -1,5 +1,7 @@
 package cli
 
+import "time"
+
 type Arg struct {
 	name  string
 	help  string
@@ -24,6 +26,12 @@ func (a *Arg) Optional() *OptionalArg {
 func (a *Arg) Int(target *int) *Int {
 	value := &Int{target, a.env, nil}
 	a.value = &intValue{key: a.key(), inner: value}
+	return value
+}
+
+func (a *Arg) Duration(target *time.Duration) *Duration {
+	value := &Duration{target, a.env, nil}
+	a.value = &durationValue{key: a.key(), inner: value}
 	return value
 }
 
@@ -74,6 +82,12 @@ func (a *OptionalArg) String(target **string) *OptionalString {
 func (a *OptionalArg) Int(target **int) *OptionalInt {
 	value := &OptionalInt{target, a.a.env, nil}
 	a.a.value = &optionalIntValue{key: a.key(), inner: value}
+	return value
+}
+
+func (a *OptionalArg) Duration(target **time.Duration) *OptionalDuration {
+	value := &OptionalDuration{target, a.a.env, nil}
+	a.a.value = &optionalDurationValue{key: a.key(), inner: value}
 	return value
 }
 
