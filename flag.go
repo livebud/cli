@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"net/url"
 	"strings"
 	"time"
 )
@@ -43,6 +44,12 @@ func (f *Flag) Int(target *int) *Int {
 func (f *Flag) Duration(target *time.Duration) *Duration {
 	value := &Duration{target, f.env, nil}
 	f.value = &durationValue{key: f.key(), inner: value}
+	return value
+}
+
+func (f *Flag) Url(target *url.URL) *Url {
+	value := &Url{target, f.env, nil}
+	f.value = &urlValue{key: f.key(), inner: value}
 	return value
 }
 
@@ -119,6 +126,12 @@ func (f *OptionalFlag) Int(target **int) *OptionalInt {
 func (f *OptionalFlag) Duration(target **time.Duration) *OptionalDuration {
 	value := &OptionalDuration{target, f.f.env, nil}
 	f.f.value = &optionalDurationValue{key: f.key(), inner: value}
+	return value
+}
+
+func (f *OptionalFlag) Url(target **url.URL) *OptionalUrl {
+	value := &OptionalUrl{target, f.f.env, nil}
+	f.f.value = &optionalUrlValue{key: f.key(), inner: value}
 	return value
 }
 

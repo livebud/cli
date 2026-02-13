@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"net/url"
 	"os"
 	"os/exec"
 	"strings"
@@ -441,6 +442,97 @@ func TestFlagStringRequired(t *testing.T) {
 	err := cli.Parse(ctx)
 	is.True(err != nil)
 	is.Equal(err.Error(), "missing --flag or $FLAG environment variable")
+}
+
+func TestFlagUrl(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag url.URL
+	cli.Flag("flag", "cli flag").Url(&flag)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "--flag", "https://example.com")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(flag.String(), "https://example.com")
+	isEqual(t, actual.String(), ``)
+}
+
+func TestFlagUrlInvalid(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag url.URL
+	cli.Flag("flag", "cli flag").Url(&flag)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "--flag", "%")
+	is.True(err != nil)
+	is.Equal(err.Error(), `--flag: expected a URL but got "%"`)
+}
+
+func TestFlagOptionalUrlInvalid(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag *url.URL
+	cli.Flag("flag", "cli flag").Optional().Url(&flag)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "--flag", "%")
+	is.True(err != nil)
+	is.Equal(err.Error(), `--flag: expected a URL but got "%"`)
+}
+
+func TestFlagUrlDefault(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag url.URL
+	def, err := url.Parse("https://example.com/default")
+	is.NoErr(err)
+	cli.Flag("flag", "cli flag").Url(&flag).Default(*def)
+	ctx := context.Background()
+	err = cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(flag.String(), "https://example.com/default")
+	isEqual(t, actual.String(), ``)
+}
+
+func TestFlagUrlRequired(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag url.URL
+	cli.Flag("flag", "cli flag").Url(&flag)
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.True(err != nil)
+	is.Equal(err.Error(), "missing --flag")
 }
 
 func TestFlagInt(t *testing.T) {
@@ -1857,6 +1949,62 @@ func TestFlagOptionalDurationNil(t *testing.T) {
 	is.Equal(d, nil)
 }
 
+func TestFlagOptionalUrl(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var u *url.URL
+	cli.Flag("u", "url").Optional().Url(&u)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx, "--u", "https://example.com/path")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(u.String(), "https://example.com/path")
+}
+
+func TestFlagOptionalUrlDefault(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var u *url.URL
+	def, err := url.Parse("https://example.com/default")
+	is.NoErr(err)
+	cli.Flag("u", "url").Optional().Url(&u).Default(*def)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err = cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(u.String(), "https://example.com/default")
+}
+
+func TestFlagOptionalUrlNil(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var u *url.URL
+	cli.Flag("u", "url").Optional().Url(&u)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(u, nil)
+}
+
 func TestArgOptionalString(t *testing.T) {
 	is := is.New(t)
 	actual := new(bytes.Buffer)
@@ -2056,6 +2204,80 @@ func TestArgDuration(t *testing.T) {
 	isEqual(t, actual.String(), ``)
 }
 
+func TestArgUrl(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var arg url.URL
+	cli.Arg("arg", "url arg").Url(&arg)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "https://example.com")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(arg.String(), "https://example.com")
+	isEqual(t, actual.String(), ``)
+}
+
+func TestArgUrlDefault(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var arg url.URL
+	def, err := url.Parse("https://example.com/default")
+	is.NoErr(err)
+	cli.Arg("arg", "url arg").Url(&arg).Default(*def)
+	ctx := context.Background()
+	err = cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(arg.String(), "https://example.com/default")
+	isEqual(t, actual.String(), ``)
+}
+
+func TestArgUrlRequired(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var arg url.URL
+	cli.Arg("arg", "url arg").Url(&arg)
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.True(err != nil)
+	is.Equal(err.Error(), "missing <arg>")
+}
+
+func TestArgUrlInvalid(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var arg url.URL
+	cli.Arg("arg", "url arg").Url(&arg)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "%")
+	is.True(err != nil)
+	is.Equal(err.Error(), `<arg>: expected a URL but got "%"`)
+}
+
 func TestArgDurationDefault(t *testing.T) {
 	is := is.New(t)
 	actual := new(bytes.Buffer)
@@ -2144,6 +2366,79 @@ func TestArgOptionalDurationNil(t *testing.T) {
 	is.NoErr(err)
 	is.Equal(1, called)
 	is.Equal(d, nil)
+}
+
+func TestArgOptionalUrl(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var u *url.URL
+	cli.Arg("u", "url arg").Optional().Url(&u)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx, "https://example.com/path")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(u.String(), "https://example.com/path")
+}
+
+func TestArgOptionalUrlDefault(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var u *url.URL
+	def, err := url.Parse("https://example.com/default")
+	is.NoErr(err)
+	cli.Arg("u", "url arg").Optional().Url(&u).Default(*def)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err = cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(u.String(), "https://example.com/default")
+}
+
+func TestArgOptionalUrlNil(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var u *url.URL
+	cli.Arg("u", "url arg").Optional().Url(&u)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(u, nil)
+}
+
+func TestArgOptionalUrlInvalid(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var u *url.URL
+	cli.Arg("u", "url arg").Optional().Url(&u)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx, "%")
+	is.True(err != nil)
+	is.Equal(err.Error(), `<u>: expected a URL but got "%"`)
 }
 
 func TestArgsDurations(t *testing.T) {

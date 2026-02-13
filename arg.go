@@ -1,6 +1,9 @@
 package cli
 
-import "time"
+import (
+	"net/url"
+	"time"
+)
 
 type Arg struct {
 	name  string
@@ -32,6 +35,12 @@ func (a *Arg) Int(target *int) *Int {
 func (a *Arg) Duration(target *time.Duration) *Duration {
 	value := &Duration{target, a.env, nil}
 	a.value = &durationValue{key: a.key(), inner: value}
+	return value
+}
+
+func (a *Arg) Url(target *url.URL) *Url {
+	value := &Url{target, a.env, nil}
+	a.value = &urlValue{key: a.key(), inner: value}
 	return value
 }
 
@@ -88,6 +97,12 @@ func (a *OptionalArg) Int(target **int) *OptionalInt {
 func (a *OptionalArg) Duration(target **time.Duration) *OptionalDuration {
 	value := &OptionalDuration{target, a.a.env, nil}
 	a.a.value = &optionalDurationValue{key: a.key(), inner: value}
+	return value
+}
+
+func (a *OptionalArg) Url(target **url.URL) *OptionalUrl {
+	value := &OptionalUrl{target, a.a.env, nil}
+	a.a.value = &optionalUrlValue{key: a.key(), inner: value}
 	return value
 }
 
