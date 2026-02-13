@@ -34,6 +34,13 @@ func (a *Args) Strings(target *[]string) *Strings {
 	return value
 }
 
+func (a *Args) Enums(target *[]string, possibilities ...string) *Enums {
+	*target = []string{}
+	value := &Enums{target: target, envvar: a.env, possibilities: possibilities}
+	a.value = &enumsValue{key: a.key(), inner: value}
+	return value
+}
+
 func (a *Args) Durations(target *[]time.Duration) *Durations {
 	*target = []time.Duration{}
 	value := &Durations{target, a.env, nil, false}
@@ -59,6 +66,12 @@ func (a *OptionalArgs) key() string {
 func (a *OptionalArgs) Strings(target *[]string) *Strings {
 	value := &Strings{target, a.a.env, nil, true}
 	a.a.value = &stringsValue{key: a.key(), inner: value}
+	return value
+}
+
+func (a *OptionalArgs) Enums(target *[]string, possibilities ...string) *Enums {
+	value := &Enums{target: target, envvar: a.a.env, possibilities: possibilities, optional: true}
+	a.a.value = &enumsValue{key: a.key(), inner: value}
 	return value
 }
 

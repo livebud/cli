@@ -59,6 +59,13 @@ func (f *Flag) Strings(target *[]string) *Strings {
 	return value
 }
 
+func (f *Flag) Enums(target *[]string, possibilities ...string) *Enums {
+	*target = []string{}
+	value := &Enums{target: target, envvar: f.env, possibilities: possibilities}
+	f.value = &enumsValue{key: f.key(), inner: value}
+	return value
+}
+
 func (f *Flag) Durations(target *[]time.Duration) *Durations {
 	*target = []time.Duration{}
 	value := &Durations{target, f.env, nil, false}
@@ -124,6 +131,12 @@ func (f *OptionalFlag) Bool(target **bool) *OptionalBool {
 func (f *OptionalFlag) Strings(target *[]string) *Strings {
 	value := &Strings{target, f.f.env, nil, true}
 	f.f.value = &stringsValue{key: f.key(), inner: value}
+	return value
+}
+
+func (f *OptionalFlag) Enums(target *[]string, possibilities ...string) *Enums {
+	value := &Enums{target: target, envvar: f.f.env, possibilities: possibilities, optional: true}
+	f.f.value = &enumsValue{key: f.key(), inner: value}
 	return value
 }
 

@@ -828,6 +828,78 @@ func TestFlagStringsEmptyDefaultHelp(t *testing.T) {
 `)
 }
 
+func TestFlagEnums(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flags []string
+	cli.Flag("flag", "cli flag").Enums(&flags, "a", "b", "c")
+	ctx := context.Background()
+	err := cli.Parse(ctx, "--flag", "a", "--flag", "c")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(flags, []string{"a", "c"})
+}
+
+func TestFlagEnumsRequired(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flags []string
+	cli.Flag("flag", "cli flag").Enums(&flags, "a", "b", "c")
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.True(err != nil)
+	is.Equal(err.Error(), "missing --flag")
+	is.Equal(0, called)
+}
+
+func TestFlagEnumsDefault(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flags []string
+	cli.Flag("flag", "cli flag").Enums(&flags, "a", "b", "c").Default("a", "b")
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(flags, []string{"a", "b"})
+}
+
+func TestFlagEnumsInvalid(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flags []string
+	cli.Flag("flag", "cli flag").Enums(&flags, "a", "b", "c")
+	ctx := context.Background()
+	err := cli.Parse(ctx, "--flag", "d")
+	is.True(err != nil)
+	is.Equal(err.Error(), `--flag "d" must be either "a", "b" or "c"`)
+	is.Equal(0, called)
+}
+
 func TestFlagStringMap(t *testing.T) {
 	is := is.New(t)
 	actual := new(bytes.Buffer)
@@ -1286,6 +1358,61 @@ func TestArgsStrings(t *testing.T) {
 	is.Equal(args[0], "new")
 	is.Equal(args[1], "view")
 	isEqual(t, actual.String(), ``)
+}
+
+func TestArgsEnums(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var args []string
+	cli.Args("custom", "custom enums").Enums(&args, "new", "view")
+	ctx := context.Background()
+	err := cli.Parse(ctx, "new", "view")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(args, []string{"new", "view"})
+	isEqual(t, actual.String(), ``)
+}
+
+func TestArgsEnumsRequired(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var args []string
+	cli.Args("custom", "custom enums").Enums(&args, "new", "view")
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.True(err != nil)
+	is.Equal(err.Error(), "missing <custom...>")
+	is.Equal(0, called)
+}
+
+func TestArgsEnumsInvalid(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var args []string
+	cli.Args("custom", "custom enums").Enums(&args, "new", "view")
+	ctx := context.Background()
+	err := cli.Parse(ctx, "new", "invalid")
+	is.True(err != nil)
+	is.Equal(err.Error(), `<custom...> "invalid" must be either "new" or "view"`)
+	is.Equal(0, called)
 }
 
 func TestUsageError(t *testing.T) {
@@ -2158,6 +2285,60 @@ func TestFlagOptionalStrings(t *testing.T) {
 	is.Equal(s, []string{"foo", "bar"})
 }
 
+func TestFlagOptionalEnums(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var s []string
+	cli.Flag("s", "s").Optional().Enums(&s, "foo", "bar")
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx, "--s=foo", "--s=bar")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(s, []string{"foo", "bar"})
+}
+
+func TestFlagOptionalEnumsDefault(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var s []string
+	cli.Flag("s", "s").Optional().Enums(&s, "foo", "bar", "baz").Default("foo", "bar")
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(s, []string{"foo", "bar"})
+}
+
+func TestFlagOptionalEnumsEmpty(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var s []string
+	cli.Flag("s", "s").Optional().Enums(&s, "foo", "bar")
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(s, nil)
+}
+
 func TestFlagOptionalStringsDefault(t *testing.T) {
 	is := is.New(t)
 	actual := new(bytes.Buffer)
@@ -2210,6 +2391,60 @@ func TestArgsOptionalStrings(t *testing.T) {
 	is.NoErr(err)
 	is.Equal(1, called)
 	is.Equal(s, []string{"foo", "bar"})
+}
+
+func TestArgsOptionalEnums(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var s []string
+	cli.Args("s", "enums args").Optional().Enums(&s, "foo", "bar")
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx, "foo", "bar")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(s, []string{"foo", "bar"})
+}
+
+func TestArgsOptionalEnumsDefault(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var s []string
+	cli.Args("s", "enums args").Optional().Enums(&s, "foo", "bar", "baz").Default("foo", "bar")
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(s, []string{"foo", "bar"})
+}
+
+func TestArgsOptionalEnumsEmpty(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var s []string
+	cli.Args("s", "enums args").Optional().Enums(&s, "foo", "bar")
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(s, nil)
 }
 
 func TestArgsOptionalStringsDefault(t *testing.T) {
@@ -2852,6 +3087,34 @@ func TestFlagCopy(t *testing.T) {
 	is.NoErr(cli.Parse(ctx, "check", "-h"))
 	is.True(strings.Contains(actual.String(), "revision"))
 	is.True(!strings.Contains(actual.String(), "public-key"))
+}
+
+func TestFlagEnumsEnv(t *testing.T) {
+	is := is.New(t)
+	ctx := context.Background()
+	actual := new(bytes.Buffer)
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var arr []string
+	cli.Flag("arr", "arr").Env("ARR").Enums(&arr, "a", "b", "c d")
+
+	t.Setenv("ARR", "a b 'c d'")
+
+	is.NoErr(cli.Parse(ctx))
+	is.Equal(arr, []string{"a", "b", "c d"})
+}
+
+func TestArgsEnumsEnv(t *testing.T) {
+	is := is.New(t)
+	ctx := context.Background()
+	actual := new(bytes.Buffer)
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var arr []string
+	cli.Args("arr", "arr").Env("ARR").Enums(&arr, "a", "b", "c d")
+
+	t.Setenv("ARR", "a b 'c d'")
+
+	is.NoErr(cli.Parse(ctx))
+	is.Equal(arr, []string{"a", "b", "c d"})
 }
 
 func TestFlagEnv(t *testing.T) {
