@@ -46,7 +46,7 @@ func equal(t testing.TB, expect, actual string) {
 	if expect == actual {
 		return
 	}
-	t.Fatal(diff.String(expect, actual))
+	t.Fatal(diff.String(actual, expect))
 }
 
 func encode(w io.Writer, cmd, in any) error {
@@ -311,7 +311,7 @@ func TestHerokuInvalidFlagArgFlagOrderTwo(t *testing.T) {
 	is.True(errors.Is(err, cli.ErrInvalidInput))
 }
 
-func TestHelpArgs(t *testing.T) {
+func TestHelpArg(t *testing.T) {
 	is := is.New(t)
 	actual := new(bytes.Buffer)
 	cmd := cli.New("cp", "copy files").Writer(actual)
@@ -323,14 +323,37 @@ func TestHelpArgs(t *testing.T) {
 	is.NoErr(err)
 	isEqual(t, actual.String(), `
   {bold}Usage:{reset}
-    {dim}${reset} cp {dim}<src>{reset} {dim}[<dst>]{reset}
+    {dim}${reset} cp {dim}<src>{reset} {dim}[dst]{reset}
 
   {bold}Description:{reset}
     copy files
 
   {bold}Args:{reset}
     <src>  {dim}source{reset}
-    <dst>  {dim}destination (default:"."){reset}
+    [dst]  {dim}destination (default:"."){reset}
+
+`)
+}
+
+func TestHelpArgs(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	cmd := cli.New("cp", "copy files").Writer(actual)
+	// strings := []string{}
+	cmd.Args("files", "all files").Strings(nil)
+	cmd.Run(func(ctx context.Context) error { return nil })
+	ctx := context.Background()
+	err := cmd.Parse(ctx, "-h")
+	is.NoErr(err)
+	isEqual(t, actual.String(), `
+  {bold}Usage:{reset}
+    {dim}${reset} cp {dim}[files...]{reset}
+
+  {bold}Description:{reset}
+    copy files
+
+  {bold}Args:{reset}
+    [files...]  {dim}all files{reset}
 
 `)
 }

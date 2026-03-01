@@ -31,35 +31,45 @@ func (a *Args) Optional() *OptionalArgs {
 }
 
 func (a *Args) Strings(target *[]string) *Strings {
-	*target = []string{}
+	if target != nil {
+		*target = []string{}
+	}
 	value := &Strings{target, a.env, nil, false}
 	a.value = &stringsValue{key: a.key(), inner: value}
 	return value
 }
 
 func (a *Args) Urls(target *[]*url.URL) *Urls {
-	*target = []*url.URL{}
+	if target != nil {
+		*target = []*url.URL{}
+	}
 	value := &Urls{target, a.env, nil, false}
 	a.value = &urlsValue{key: a.key(), inner: value}
 	return value
 }
 
 func (a *Args) Enums(target *[]string, possibilities ...string) *Enums {
-	*target = []string{}
+	if target != nil {
+		*target = []string{}
+	}
 	value := &Enums{target: target, envvar: a.env, possibilities: possibilities}
 	a.value = &enumsValue{key: a.key(), inner: value}
 	return value
 }
 
 func (a *Args) Durations(target *[]time.Duration) *Durations {
-	*target = []time.Duration{}
+	if target != nil {
+		*target = []time.Duration{}
+	}
 	value := &Durations{target, a.env, nil, false}
 	a.value = &durationsValue{key: a.key(), inner: value}
 	return value
 }
 
 func (a *Args) StringMap(target *map[string]string) *StringMap {
-	*target = map[string]string{}
+	if target != nil {
+		*target = map[string]string{}
+	}
 	value := &StringMap{target, a.env, nil, false}
 	a.value = &stringMapValue{key: "<key:value...>", inner: value}
 	return value
@@ -92,7 +102,9 @@ func (a *OptionalArgs) Enums(target *[]string, possibilities ...string) *Enums {
 }
 
 func (a *OptionalArgs) Durations(target *[]time.Duration) *Durations {
-	*target = []time.Duration{}
+	if target != nil {
+		*target = []time.Duration{}
+	}
 	value := &Durations{target, a.a.env, nil, true}
 	a.a.value = &durationsValue{key: a.key(), inner: value}
 	return value

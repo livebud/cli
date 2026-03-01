@@ -32,12 +32,26 @@ func (u *usage) Full() string {
 	return u.cmd.full
 }
 
-func argIsOptional(arg *Arg) bool {
-	if arg.value.optional() {
+func valueIsOptionalOrHasDefault(v value) bool {
+	if v == nil {
+		return false
+	}
+	if v.optional() {
 		return true
 	}
-	_, hasDefault := arg.value.Default()
+	_, hasDefault := v.Default()
 	return hasDefault
+}
+
+func formatFixedArgUsage(name string, v value) string {
+	if valueIsOptionalOrHasDefault(v) {
+		return "[" + name + "]"
+	}
+	return "<" + name + ">"
+}
+
+func formatRestArgsUsage(name string) string {
+	return "[" + name + "...]"
 }
 
 func (u *usage) Usage() string {
@@ -48,20 +62,17 @@ func (u *usage) Usage() string {
 		out.WriteString("[flags]")
 		out.WriteString(reset())
 	}
-	if u.cmd.run != nil && len(u.cmd.args) > 0 {
+	if u.cmd.run != nil && (len(u.cmd.args) > 0 || u.cmd.restArgs != nil) {
 		for _, arg := range u.cmd.args {
-			isOptionalOrHasDefault := argIsOptional(arg)
 			out.WriteString(" ")
 			out.WriteString(dim())
-			if isOptionalOrHasDefault {
-				out.WriteString("[")
-			}
-			out.WriteString("<")
-			out.WriteString(arg.name)
-			out.WriteString(">")
-			if isOptionalOrHasDefault {
-				out.WriteString("]")
-			}
+			out.WriteString(formatFixedArgUsage(arg.name, arg.value))
+			out.WriteString(reset())
+		}
+		if u.cmd.restArgs != nil {
+			out.WriteString(" ")
+			out.WriteString(dim())
+			out.WriteString(formatRestArgsUsage(u.cmd.restArgs.name))
 			out.WriteString(reset())
 		}
 	} else if len(u.cmd.commands) > 0 {
@@ -79,19 +90,44 @@ func (u *usage) Description() string {
 
 func (u *usage) Args() (args usageArgs) {
 	for _, arg := range u.cmd.args {
-		args = append(args, &usageArg{arg})
+		args = append(args, &usageArg{
+			name:  arg.name,
+			help:  arg.help,
+			value: arg.value,
+		})
+	}
+	if u.cmd.restArgs != nil {
+		args = append(args, &usageArg{
+			name:     u.cmd.restArgs.name,
+			help:     u.cmd.restArgs.help,
+			value:    u.cmd.restArgs.value,
+			variadic: true,
+		})
 	}
 	return args
 }
 
 type usageArg struct {
-	a *Arg
+	name     string
+	help     string
+	value    value
+	variadic bool
+}
+
+func (a *usageArg) Key() string {
+	if a.variadic {
+		return formatRestArgsUsage(a.name)
+	}
+	return formatFixedArgUsage(a.name, a.value)
 }
 
 func (a *usageArg) Suffix() string {
-	if def, ok := a.a.value.Default(); ok {
+	if a.value == nil {
+		return ""
+	}
+	if def, ok := a.value.Default(); ok {
 		return " (default:" + strconv.Quote(def) + ")"
-	} else if a.a.value.optional() {
+	} else if a.value.optional() {
 		return " (optional)"
 	}
 	return ""
@@ -103,12 +139,11 @@ func (args usageArgs) Usage() (string, error) {
 	buf := new(bytes.Buffer)
 	tw := tabwriter.NewWriter(buf, 0, 0, 2, ' ', 0)
 	for _, arg := range args {
-		tw.Write([]byte("\t\t<"))
-		tw.Write([]byte(arg.a.name))
-		tw.Write([]byte(">"))
-		if arg.a.help != "" {
+		tw.Write([]byte("\t\t"))
+		tw.Write([]byte(arg.Key()))
+		if arg.help != "" {
 			tw.Write([]byte("\t" + dim()))
-			tw.Write([]byte(arg.a.help))
+			tw.Write([]byte(arg.help))
 			tw.Write([]byte(arg.Suffix()))
 			tw.Write([]byte(reset()))
 		}
