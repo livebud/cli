@@ -1,3 +1,10 @@
+# 0.0.24 / 2026-03-01
+
+- Add subcommand support to CLI
+- add support for parsing urls
+- improve --help for args
+- add support for enums
+
 # 0.0.23 / 2026-01-28
 
 - add support for duration
