@@ -66,6 +66,13 @@ func (f *Flag) Strings(target *[]string) *Strings {
 	return value
 }
 
+func (f *Flag) Urls(target *[]*url.URL) *Urls {
+	*target = []*url.URL{}
+	value := &Urls{target, f.env, nil, false}
+	f.value = &urlsValue{key: f.key(), inner: value}
+	return value
+}
+
 func (f *Flag) Enums(target *[]string, possibilities ...string) *Enums {
 	*target = []string{}
 	value := &Enums{target: target, envvar: f.env, possibilities: possibilities}
@@ -144,6 +151,12 @@ func (f *OptionalFlag) Bool(target **bool) *OptionalBool {
 func (f *OptionalFlag) Strings(target *[]string) *Strings {
 	value := &Strings{target, f.f.env, nil, true}
 	f.f.value = &stringsValue{key: f.key(), inner: value}
+	return value
+}
+
+func (f *OptionalFlag) Urls(target *[]*url.URL) *Urls {
+	value := &Urls{target, f.f.env, nil, true}
+	f.f.value = &urlsValue{key: f.key(), inner: value}
 	return value
 }
 

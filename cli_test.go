@@ -840,6 +840,68 @@ func TestFlagStrings(t *testing.T) {
 	is.Equal(flags[1], "2")
 }
 
+func TestFlagUrls(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flags []*url.URL
+	cli.Flag("flag", "cli flag").Urls(&flags)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "--flag", "https://a.com", "--flag", "https://b.com")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(len(flags), 2)
+	is.Equal(flags[0].String(), "https://a.com")
+	is.Equal(flags[1].String(), "https://b.com")
+}
+
+func TestFlagUrlsDefault(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flags []*url.URL
+	a, err := url.Parse("https://a.com")
+	is.NoErr(err)
+	b, err := url.Parse("https://b.com")
+	is.NoErr(err)
+	cli.Flag("flag", "cli flag").Urls(&flags).Default(a, b)
+	ctx := context.Background()
+	err = cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(len(flags), 2)
+	is.Equal(flags[0].String(), "https://a.com")
+	is.Equal(flags[1].String(), "https://b.com")
+}
+
+func TestFlagUrlsInvalid(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flags []*url.URL
+	cli.Flag("flag", "cli flag").Urls(&flags)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "--flag", "%")
+	is.True(err != nil)
+	is.Equal(err.Error(), `--flag: expected a URL but got "%"`)
+	is.Equal(0, called)
+}
+
 func TestFlagStringsRequired(t *testing.T) {
 	is := is.New(t)
 	actual := new(bytes.Buffer)
@@ -1450,6 +1512,70 @@ func TestArgsStrings(t *testing.T) {
 	is.Equal(args[0], "new")
 	is.Equal(args[1], "view")
 	isEqual(t, actual.String(), ``)
+}
+
+func TestArgsUrls(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var args []*url.URL
+	cli.Args("custom", "custom urls").Urls(&args)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "https://a.com", "https://b.com")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(len(args), 2)
+	is.Equal(args[0].String(), "https://a.com")
+	is.Equal(args[1].String(), "https://b.com")
+	isEqual(t, actual.String(), ``)
+}
+
+func TestArgsUrlsDefault(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var args []*url.URL
+	a, err := url.Parse("https://a.com")
+	is.NoErr(err)
+	b, err := url.Parse("https://b.com")
+	is.NoErr(err)
+	cli.Args("custom", "custom urls").Urls(&args).Default(a, b)
+	ctx := context.Background()
+	err = cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(len(args), 2)
+	is.Equal(args[0].String(), "https://a.com")
+	is.Equal(args[1].String(), "https://b.com")
+	isEqual(t, actual.String(), ``)
+}
+
+func TestArgsUrlsInvalid(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var args []*url.URL
+	cli.Args("custom", "custom urls").Urls(&args)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "%")
+	is.True(err != nil)
+	is.Equal(err.Error(), `<custom...>: expected a URL but got "%"`)
+	is.Equal(0, called)
 }
 
 func TestArgsEnums(t *testing.T) {
@@ -2580,6 +2706,26 @@ func TestFlagOptionalStrings(t *testing.T) {
 	is.Equal(s, []string{"foo", "bar"})
 }
 
+func TestFlagOptionalUrls(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var s []*url.URL
+	cli.Flag("s", "s").Optional().Urls(&s)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx, "--s=https://foo.com", "--s=https://bar.com")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(len(s), 2)
+	is.Equal(s[0].String(), "https://foo.com")
+	is.Equal(s[1].String(), "https://bar.com")
+}
+
 func TestFlagOptionalEnums(t *testing.T) {
 	is := is.New(t)
 	actual := new(bytes.Buffer)
@@ -2652,6 +2798,30 @@ func TestFlagOptionalStringsDefault(t *testing.T) {
 	is.Equal(s, []string{"foo", "bar"})
 }
 
+func TestFlagOptionalUrlsDefault(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var s []*url.URL
+	foo, err := url.Parse("https://foo.com")
+	is.NoErr(err)
+	bar, err := url.Parse("https://bar.com")
+	is.NoErr(err)
+	cli.Flag("s", "s").Optional().Urls(&s).Default(foo, bar)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err = cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(len(s), 2)
+	is.Equal(s[0].String(), "https://foo.com")
+	is.Equal(s[1].String(), "https://bar.com")
+}
+
 func TestFlagOptionalStringsEmpty(t *testing.T) {
 	is := is.New(t)
 	actual := new(bytes.Buffer)
@@ -2659,6 +2829,24 @@ func TestFlagOptionalStringsEmpty(t *testing.T) {
 	cli := cli.New("cli", "cli command").Writer(actual)
 	var s []string
 	cli.Flag("s", "s").Optional().Strings(&s)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(s, nil)
+}
+
+func TestFlagOptionalUrlsEmpty(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var s []*url.URL
+	cli.Flag("s", "s").Optional().Urls(&s)
 	cli.Run(func(ctx context.Context) error {
 		called++
 		return nil
@@ -2686,6 +2874,26 @@ func TestArgsOptionalStrings(t *testing.T) {
 	is.NoErr(err)
 	is.Equal(1, called)
 	is.Equal(s, []string{"foo", "bar"})
+}
+
+func TestArgsOptionalUrls(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var s []*url.URL
+	cli.Args("s", "urls args").Optional().Urls(&s)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx, "https://foo.com", "https://bar.com")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(len(s), 2)
+	is.Equal(s[0].String(), "https://foo.com")
+	is.Equal(s[1].String(), "https://bar.com")
 }
 
 func TestArgsOptionalEnums(t *testing.T) {
@@ -2760,6 +2968,30 @@ func TestArgsOptionalStringsDefault(t *testing.T) {
 	is.Equal(s, []string{"foo", "bar"})
 }
 
+func TestArgsOptionalUrlsDefault(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var s []*url.URL
+	foo, err := url.Parse("https://foo.com")
+	is.NoErr(err)
+	bar, err := url.Parse("https://bar.com")
+	is.NoErr(err)
+	cli.Args("s", "urls args").Optional().Urls(&s).Default(foo, bar)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err = cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(len(s), 2)
+	is.Equal(s[0].String(), "https://foo.com")
+	is.Equal(s[1].String(), "https://bar.com")
+}
+
 func TestArgsOptionalStringsEmpty(t *testing.T) {
 	is := is.New(t)
 	actual := new(bytes.Buffer)
@@ -2767,6 +2999,24 @@ func TestArgsOptionalStringsEmpty(t *testing.T) {
 	cli := cli.New("cli", "cli command").Writer(actual)
 	var s []string
 	cli.Args("s", "strings args").Optional().Strings(&s)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(s, nil)
+}
+
+func TestArgsOptionalUrlsEmpty(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var s []*url.URL
+	cli.Args("s", "urls args").Optional().Urls(&s)
 	cli.Run(func(ctx context.Context) error {
 		called++
 		return nil
@@ -3410,6 +3660,38 @@ func TestArgsEnumsEnv(t *testing.T) {
 
 	is.NoErr(cli.Parse(ctx))
 	is.Equal(arr, []string{"a", "b", "c d"})
+}
+
+func TestFlagUrlsEnv(t *testing.T) {
+	is := is.New(t)
+	ctx := context.Background()
+	actual := new(bytes.Buffer)
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var arr []*url.URL
+	cli.Flag("arr", "arr").Env("ARR").Urls(&arr)
+
+	t.Setenv("ARR", "https://a.com https://b.com/path")
+
+	is.NoErr(cli.Parse(ctx))
+	is.Equal(len(arr), 2)
+	is.Equal(arr[0].String(), "https://a.com")
+	is.Equal(arr[1].String(), "https://b.com/path")
+}
+
+func TestArgsUrlsEnv(t *testing.T) {
+	is := is.New(t)
+	ctx := context.Background()
+	actual := new(bytes.Buffer)
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var arr []*url.URL
+	cli.Args("arr", "arr").Env("ARR").Urls(&arr)
+
+	t.Setenv("ARR", "https://a.com https://b.com/path")
+
+	is.NoErr(cli.Parse(ctx))
+	is.Equal(len(arr), 2)
+	is.Equal(arr[0].String(), "https://a.com")
+	is.Equal(arr[1].String(), "https://b.com/path")
 }
 
 func TestFlagEnv(t *testing.T) {

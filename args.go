@@ -1,6 +1,9 @@
 package cli
 
-import "time"
+import (
+	"net/url"
+	"time"
+)
 
 type Args struct {
 	name  string
@@ -31,6 +34,13 @@ func (a *Args) Strings(target *[]string) *Strings {
 	*target = []string{}
 	value := &Strings{target, a.env, nil, false}
 	a.value = &stringsValue{key: a.key(), inner: value}
+	return value
+}
+
+func (a *Args) Urls(target *[]*url.URL) *Urls {
+	*target = []*url.URL{}
+	value := &Urls{target, a.env, nil, false}
+	a.value = &urlsValue{key: a.key(), inner: value}
 	return value
 }
 
@@ -66,6 +76,12 @@ func (a *OptionalArgs) key() string {
 func (a *OptionalArgs) Strings(target *[]string) *Strings {
 	value := &Strings{target, a.a.env, nil, true}
 	a.a.value = &stringsValue{key: a.key(), inner: value}
+	return value
+}
+
+func (a *OptionalArgs) Urls(target *[]*url.URL) *Urls {
+	value := &Urls{target, a.a.env, nil, true}
+	a.a.value = &urlsValue{key: a.key(), inner: value}
 	return value
 }
 
