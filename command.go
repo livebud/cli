@@ -213,6 +213,10 @@ func (c *command) Command(name, help string) Command {
 	return cmd
 }
 
+func (c *command) Add(sc Subcommand) {
+	sc.Command(c)
+}
+
 func (c *command) Hidden() Command {
 	c.hidden = true
 	return c

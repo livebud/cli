@@ -18,8 +18,13 @@ var ErrCommandNotFound = errors.New("cli: command not found")
 
 type Middleware = func(next func(ctx context.Context) error) func(ctx context.Context) error
 
+type Subcommand interface {
+	Command(cmd Command)
+}
+
 type Command interface {
 	Command(name, help string) Command
+	Add(sc Subcommand)
 	Hidden() Command
 	Advanced() Command
 	Flag(name, help string) *Flag
@@ -80,6 +85,10 @@ func (c *CLI) Parse(ctx context.Context, args ...string) error {
 
 func (c *CLI) Command(name, help string) Command {
 	return c.root.Command(name, help)
+}
+
+func (c *CLI) Add(sc Subcommand) {
+	c.root.Add(sc)
 }
 
 func (c *CLI) Hidden() Command {

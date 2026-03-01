@@ -1254,6 +1254,53 @@ func TestArgsStringMapDefault(t *testing.T) {
 	is.Equal(args["b"], "2")
 }
 
+type addSubcommand struct {
+	Name string
+	Help string
+	Ran  *bool
+}
+
+func (a *addSubcommand) Command(cmd cli.Command) {
+	sub := cmd.Command(a.Name, a.Help)
+	sub.Run(func(ctx context.Context) error {
+		*a.Ran = true
+		return nil
+	})
+}
+
+func TestAddCLI(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	cli := cli.New("bud", "bud CLI").Writer(actual)
+	ran := false
+	cli.Add(&addSubcommand{
+		Name: "build",
+		Help: "build your application",
+		Ran:  &ran,
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx, "build")
+	is.NoErr(err)
+	is.True(ran)
+}
+
+func TestAddCommand(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	cli := cli.New("bud", "bud CLI").Writer(actual)
+	cmd := cli.Command("generate", "generate commands")
+	ran := false
+	cmd.Add(&addSubcommand{
+		Name: "controller",
+		Help: "generate a controller",
+		Ran:  &ran,
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx, "generate", "controller")
+	is.NoErr(err)
+	is.True(ran)
+}
+
 func TestSub(t *testing.T) {
 	is := is.New(t)
 	actual := new(bytes.Buffer)
