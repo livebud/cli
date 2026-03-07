@@ -1,3 +1,7 @@
+# 0.0.25 / 2026-03-07
+
+- **BREAKING:** remove the `Add` and `Subcommand` APIs introduced in `v0.0.24`; register subcommands with `cli.Command(name, help)` instead.
+
 # 0.0.24 / 2026-03-01
 
 - Add subcommand support to CLI
