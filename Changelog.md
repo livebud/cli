@@ -1,3 +1,7 @@
+# 0.0.26 / 2026-03-17
+
+- add support for command aliasing: `cli.Command("list", "list command").Alias("ls")`
+
 # 0.0.25 / 2026-03-07
 
 - **BREAKING:** remove the `Add` and `Subcommand` APIs introduced in `v0.0.24`; register subcommands with `cli.Command(name, help)` instead.
