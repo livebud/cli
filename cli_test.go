@@ -3314,6 +3314,45 @@ func TestFlagEnumRequired(t *testing.T) {
 	is.Equal(err.Error(), "missing --flag")
 }
 
+func TestCommandAlias(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("bud", "bud cli").Writer(actual)
+	env := cli.Command("env", "environment tools")
+	cmd := env.Command("list", "list environment variables").Alias("ls")
+	cmd.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx, "env", "ls")
+	is.NoErr(err)
+	is.Equal(1, called)
+}
+
+func TestCommandAliasUsage(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	cli := cli.New("bud", "bud cli").Writer(actual)
+	env := cli.Command("env", "environment tools")
+	env.Command("list", "list environment variables").Alias("ls")
+	ctx := context.Background()
+	err := cli.Parse(ctx, "env", "-h")
+	is.NoErr(err)
+	isEqual(t, actual.String(), `
+  {bold}Usage:{reset}
+    {dim}${reset} bud env {dim}[command]{reset}
+
+  {bold}Description:{reset}
+    environment tools
+
+  {bold}Commands:{reset}
+    list  {dim}list environment variables (alias: ls){reset}
+
+`)
+}
+
 func TestFlagEnumInvalid(t *testing.T) {
 	is := is.New(t)
 	actual := new(bytes.Buffer)
@@ -3528,6 +3567,19 @@ func TestFindNotFound(t *testing.T) {
 	cmd, err := app.Find("a", "c")
 	is.True(errors.Is(err, cli.ErrCommandNotFound))
 	is.Equal(cmd, nil)
+}
+
+func TestFindAlias(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	app := cli.New("cli", "desc").Writer(actual)
+	group := app.Command("group", "group command")
+	group.Command("list", "list command").Alias("ls")
+	canonical, err := app.Find("group", "list")
+	is.NoErr(err)
+	alias, err := app.Find("group", "ls")
+	is.NoErr(err)
+	is.Equal(alias, canonical)
 }
 
 func TestOutOfOrderFlags(t *testing.T) {

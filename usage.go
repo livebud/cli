@@ -156,10 +156,16 @@ func (args usageArgs) Usage() (string, error) {
 }
 
 func (u *usage) Commands() (commands usageCommands) {
+	seen := make(map[*command]bool)
 	for _, cmd := range u.cmd.commands {
 		if cmd.advanced || cmd.hidden {
 			continue
 		}
+		// Handle aliases by only showing the command once
+		if seen[cmd] {
+			continue
+		}
+		seen[cmd] = true
 		commands = append(commands, &usageCommand{cmd})
 	}
 	// Sort by name
@@ -212,7 +218,12 @@ func (cmds usageCommands) Usage() (string, error) {
 	for _, cmd := range cmds {
 		tw.Write([]byte("\t\t" + cmd.c.name))
 		if cmd.c.help != "" {
-			tw.Write([]byte("\t" + dim() + cmd.c.help + reset()))
+			tw.Write([]byte("\t" + dim()))
+			tw.Write([]byte(cmd.c.help))
+			if cmd.c.alias != "" {
+				tw.Write([]byte(" (alias: " + cmd.c.alias + ")"))
+			}
+			tw.Write([]byte(reset()))
 		}
 		tw.Write([]byte("\n"))
 	}

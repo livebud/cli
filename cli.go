@@ -20,6 +20,7 @@ type Middleware = func(next func(ctx context.Context) error) func(ctx context.Co
 
 type Command interface {
 	Command(name, help string) Command
+	Alias(name string) Command
 	Hidden() Command
 	Advanced() Command
 	Flag(name, help string) *Flag
@@ -31,7 +32,7 @@ type Command interface {
 
 func New(name, help string) *CLI {
 	config := &config{os.Stdout, defaultUsage, defaultSignals()}
-	return &CLI{newCommand(config, []*Flag{}, name, name, help), config}
+	return &CLI{newCommand(config, nil, []*Flag{}, name, name, help), config}
 }
 
 type CLI struct {
@@ -90,6 +91,10 @@ func (c *CLI) Advanced() Command {
 	return c.root.Advanced()
 }
 
+func (c *CLI) Alias(name string) Command {
+	return c.root.Alias(name)
+}
+
 func (c *CLI) Flag(name, help string) *Flag {
 	return c.root.Flag(name, help)
 }
@@ -134,6 +139,9 @@ func (c *CLI) complete(compline string) error {
 			continue
 		}
 		c.config.writer.Write([]byte(cmd.name + "\n"))
+		if cmd.alias != "" {
+			c.config.writer.Write([]byte(cmd.alias + "\n"))
+		}
 	}
 	return nil
 }

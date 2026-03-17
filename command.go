@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func newCommand(config *config, flags []*Flag, name, full, help string) *command {
+func newCommand(config *config, parent *command, flags []*Flag, name, full, help string) *command {
 	fset := flag.NewFlagSet(name, flag.ContinueOnError)
 	fset.SetOutput(io.Discard)
 	return &command{
@@ -19,6 +19,7 @@ func newCommand(config *config, flags []*Flag, name, full, help string) *command
 		full:     full,
 		flags:    flags,
 		help:     help,
+		parent:   parent,
 		commands: map[string]*command{},
 	}
 }
@@ -37,6 +38,8 @@ type command struct {
 	hidden   bool
 	advanced bool
 	commands map[string]*command
+	parent   *command
+	alias    string
 	flags    []*Flag
 	args     []*Arg
 	restArgs *Args // optional, collects the rest of the args
@@ -208,7 +211,7 @@ func (c *command) Command(name, help string) Command {
 	// Copy the flags from the parent command
 	flags := append([]*Flag{}, c.flags...)
 	// Create the subcommand
-	cmd := newCommand(c.config, flags, name, c.full+" "+name, help)
+	cmd := newCommand(c.config, c, flags, name, c.full+" "+name, help)
 	c.commands[name] = cmd
 	return cmd
 }
@@ -220,6 +223,19 @@ func (c *command) Hidden() Command {
 
 func (c *command) Advanced() Command {
 	c.advanced = true
+	return c
+}
+
+func (c *command) Alias(name string) Command {
+	if c.parent == nil {
+		panic(fmt.Sprintf("cli: cannot alias %q to %q because the root command cannot be aliased", c.full, name))
+	}
+	if _, ok := c.parent.commands[name]; ok {
+		panic(fmt.Sprintf("cli: cannot alias %q to %q because it already exists", c.full, name))
+	}
+	c.alias = name
+	// Sets up the routing on the parent to route the alias to this command
+	c.parent.commands[name] = c
 	return c
 }
 
@@ -236,7 +252,7 @@ func (c *command) Args(name, help string) *Args {
 	if c.restArgs != nil {
 		// Panic is okay here because settings commands should be done during
 		// initialization. We want to fail fast for invalid usage.
-		panic("commander: you can only use cmd.Args(name, usage) once per command")
+		panic("cli: you can only use cmd.Args(name, usage) once per command")
 	}
 	args := &Args{
 		name: name,
