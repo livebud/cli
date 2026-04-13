@@ -66,6 +66,33 @@ func (a *Args) Durations(target *[]time.Duration) *Durations {
 	return value
 }
 
+func (a *Args) Int64s(target *[]int64) *Int64s {
+	if target != nil {
+		*target = []int64{}
+	}
+	value := &Int64s{target, a.env, nil, false}
+	a.value = &int64sValue{key: a.key(), inner: value}
+	return value
+}
+
+func (a *Args) Float32s(target *[]float32) *Float32s {
+	if target != nil {
+		*target = []float32{}
+	}
+	value := &Float32s{target, a.env, nil, false}
+	a.value = &float32sValue{key: a.key(), inner: value}
+	return value
+}
+
+func (a *Args) Float64s(target *[]float64) *Float64s {
+	if target != nil {
+		*target = []float64{}
+	}
+	value := &Float64s{target, a.env, nil, false}
+	a.value = &float64sValue{key: a.key(), inner: value}
+	return value
+}
+
 func (a *Args) StringMap(target *map[string]string) *StringMap {
 	if target != nil {
 		*target = map[string]string{}
@@ -107,6 +134,24 @@ func (a *OptionalArgs) Durations(target *[]time.Duration) *Durations {
 	}
 	value := &Durations{target, a.a.env, nil, true}
 	a.a.value = &durationsValue{key: a.key(), inner: value}
+	return value
+}
+
+func (a *OptionalArgs) Int64s(target *[]int64) *Int64s {
+	value := &Int64s{target, a.a.env, nil, true}
+	a.a.value = &int64sValue{key: a.key(), inner: value}
+	return value
+}
+
+func (a *OptionalArgs) Float32s(target *[]float32) *Float32s {
+	value := &Float32s{target, a.a.env, nil, true}
+	a.a.value = &float32sValue{key: a.key(), inner: value}
+	return value
+}
+
+func (a *OptionalArgs) Float64s(target *[]float64) *Float64s {
+	value := &Float64s{target, a.a.env, nil, true}
+	a.a.value = &float64sValue{key: a.key(), inner: value}
 	return value
 }
 

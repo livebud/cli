@@ -4158,6 +4158,894 @@ func TestMiddlewareContext(t *testing.T) {
 	is.Equal(actual.String(), "value")
 }
 
+func TestArgsInt64s(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var args []int64
+	cli.Args("nums", "int64 args").Int64s(&args)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "1", "2", "3")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(len(args), 3)
+	is.Equal(args[0], int64(1))
+	is.Equal(args[1], int64(2))
+	is.Equal(args[2], int64(3))
+	isEqual(t, actual.String(), ``)
+}
+
+func TestArgsInt64sDefault(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var args []int64
+	cli.Args("nums", "int64 args").Int64s(&args).Default(10, 20)
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(len(args), 2)
+	is.Equal(args[0], int64(10))
+	is.Equal(args[1], int64(20))
+	isEqual(t, actual.String(), ``)
+}
+
+func TestArgsInt64sRequired(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var args []int64
+	cli.Args("nums", "int64 args").Int64s(&args)
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.True(err != nil)
+	is.Equal(err.Error(), "missing <nums...>")
+}
+
+func TestArgsOptionalInt64s(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var args []int64
+	cli.Args("nums", "int64 args").Optional().Int64s(&args)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "10", "20")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(len(args), 2)
+	is.Equal(args[0], int64(10))
+	is.Equal(args[1], int64(20))
+	isEqual(t, actual.String(), ``)
+}
+
+func TestArgsFloat32s(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var args []float32
+	cli.Args("nums", "float32 args").Float32s(&args)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "1.5", "2.5", "3.5")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(len(args), 3)
+	is.Equal(args[0], float32(1.5))
+	is.Equal(args[1], float32(2.5))
+	is.Equal(args[2], float32(3.5))
+	isEqual(t, actual.String(), ``)
+}
+
+func TestArgsFloat32sDefault(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var args []float32
+	cli.Args("nums", "float32 args").Float32s(&args).Default(1.5, 2.5)
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(len(args), 2)
+	is.Equal(args[0], float32(1.5))
+	is.Equal(args[1], float32(2.5))
+	isEqual(t, actual.String(), ``)
+}
+
+func TestArgsFloat32sRequired(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var args []float32
+	cli.Args("nums", "float32 args").Float32s(&args)
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.True(err != nil)
+	is.Equal(err.Error(), "missing <nums...>")
+}
+
+func TestArgsOptionalFloat32s(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var args []float32
+	cli.Args("nums", "float32 args").Optional().Float32s(&args)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "1.5", "2.5")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(len(args), 2)
+	is.Equal(args[0], float32(1.5))
+	is.Equal(args[1], float32(2.5))
+	isEqual(t, actual.String(), ``)
+}
+
+func TestArgsFloat64s(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var args []float64
+	cli.Args("nums", "float64 args").Float64s(&args)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "1.5", "2.5", "3.5")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(len(args), 3)
+	is.Equal(args[0], 1.5)
+	is.Equal(args[1], 2.5)
+	is.Equal(args[2], 3.5)
+	isEqual(t, actual.String(), ``)
+}
+
+func TestArgsFloat64sDefault(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var args []float64
+	cli.Args("nums", "float64 args").Float64s(&args).Default(1.5, 2.5)
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(len(args), 2)
+	is.Equal(args[0], 1.5)
+	is.Equal(args[1], 2.5)
+	isEqual(t, actual.String(), ``)
+}
+
+func TestArgsFloat64sRequired(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var args []float64
+	cli.Args("nums", "float64 args").Float64s(&args)
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.True(err != nil)
+	is.Equal(err.Error(), "missing <nums...>")
+}
+
+func TestArgsOptionalFloat64s(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var args []float64
+	cli.Args("nums", "float64 args").Optional().Float64s(&args)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "1.5", "2.5")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(len(args), 2)
+	is.Equal(args[0], 1.5)
+	is.Equal(args[1], 2.5)
+	isEqual(t, actual.String(), ``)
+}
+
+func TestFlagInt64(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag int64
+	cli.Flag("flag", "cli flag").Int64(&flag)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "--flag", "10")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(flag, int64(10))
+	isEqual(t, actual.String(), ``)
+}
+
+func TestFlagInt64Invalid(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag int64
+	cli.Flag("flag", "cli flag").Int64(&flag)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "--flag", "hi")
+	is.True(err != nil)
+	is.Equal(err.Error(), `--flag: expected an int64 but got "hi"`)
+}
+
+func TestFlagInt64Default(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag int64
+	cli.Flag("flag", "cli flag").Int64(&flag).Default(10)
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(flag, int64(10))
+	isEqual(t, actual.String(), ``)
+}
+
+func TestFlagInt64Required(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag int64
+	cli.Flag("flag", "cli flag").Int64(&flag)
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.True(err != nil)
+	is.Equal(err.Error(), "missing --flag")
+}
+
+func TestFlagOptionalInt64(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var i *int64
+	cli.Flag("i", "int64").Optional().Int64(&i)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx, "--i=1")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(*i, int64(1))
+}
+
+func TestFlagOptionalInt64Default(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var i *int64
+	cli.Flag("i", "int64").Optional().Int64(&i).Default(1)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(*i, int64(1))
+}
+
+func TestFlagOptionalInt64Nil(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var i *int64
+	cli.Flag("i", "int64").Optional().Int64(&i)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(i, nil)
+}
+
+func TestArgInt64(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var i int64
+	cli.Arg("i", "int64 arg").Int64(&i)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx, "10")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(i, int64(10))
+}
+
+func TestArgInt64Invalid(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var i int64
+	cli.Arg("i", "int64 arg").Int64(&i)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx, "hi")
+	is.True(err != nil)
+	is.Equal(err.Error(), `<i>: expected an int64 but got "hi"`)
+}
+
+func TestArgOptionalInt64(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var i *int64
+	cli.Arg("i", "int64 arg").Optional().Int64(&i)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx, "1")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(*i, int64(1))
+}
+
+func TestArgOptionalInt64Default(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var i *int64
+	cli.Arg("i", "int64 arg").Optional().Int64(&i).Default(1)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(*i, int64(1))
+}
+
+func TestArgOptionalInt64Nil(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var i *int64
+	cli.Arg("i", "int64 arg").Optional().Int64(&i)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(i, nil)
+}
+
+func TestFlagFloat32(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag float32
+	cli.Flag("flag", "cli flag").Float32(&flag)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "--flag", "3.14")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(flag, float32(3.14))
+	isEqual(t, actual.String(), ``)
+}
+
+func TestFlagFloat32Invalid(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag float32
+	cli.Flag("flag", "cli flag").Float32(&flag)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "--flag", "hi")
+	is.True(err != nil)
+	is.Equal(err.Error(), `--flag: expected a float32 but got "hi"`)
+}
+
+func TestFlagFloat32Default(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag float32
+	cli.Flag("flag", "cli flag").Float32(&flag).Default(2.5)
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(flag, float32(2.5))
+	isEqual(t, actual.String(), ``)
+}
+
+func TestFlagFloat32Required(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag float32
+	cli.Flag("flag", "cli flag").Float32(&flag)
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.True(err != nil)
+	is.Equal(err.Error(), "missing --flag")
+}
+
+func TestFlagOptionalFloat32(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var f *float32
+	cli.Flag("f", "float32").Optional().Float32(&f)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx, "--f=1.5")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(*f, float32(1.5))
+}
+
+func TestFlagOptionalFloat32Default(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var f *float32
+	cli.Flag("f", "float32").Optional().Float32(&f).Default(1.5)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(*f, float32(1.5))
+}
+
+func TestFlagOptionalFloat32Nil(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var f *float32
+	cli.Flag("f", "float32").Optional().Float32(&f)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(f, nil)
+}
+
+func TestArgFloat32(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var f float32
+	cli.Arg("f", "float32 arg").Float32(&f)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx, "3.14")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(f, float32(3.14))
+}
+
+func TestArgFloat32Invalid(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var f float32
+	cli.Arg("f", "float32 arg").Float32(&f)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx, "hi")
+	is.True(err != nil)
+	is.Equal(err.Error(), `<f>: expected a float32 but got "hi"`)
+}
+
+func TestArgOptionalFloat32(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var f *float32
+	cli.Arg("f", "float32 arg").Optional().Float32(&f)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx, "1.5")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(*f, float32(1.5))
+}
+
+func TestArgOptionalFloat32Default(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var f *float32
+	cli.Arg("f", "float32 arg").Optional().Float32(&f).Default(1.5)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(*f, float32(1.5))
+}
+
+func TestArgOptionalFloat32Nil(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var f *float32
+	cli.Arg("f", "float32 arg").Optional().Float32(&f)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(f, nil)
+}
+
+func TestFlagFloat64(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag float64
+	cli.Flag("flag", "cli flag").Float64(&flag)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "--flag", "3.14")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(flag, 3.14)
+	isEqual(t, actual.String(), ``)
+}
+
+func TestFlagFloat64Invalid(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag float64
+	cli.Flag("flag", "cli flag").Float64(&flag)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "--flag", "hi")
+	is.True(err != nil)
+	is.Equal(err.Error(), `--flag: expected a float64 but got "hi"`)
+}
+
+func TestFlagFloat64Default(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag float64
+	cli.Flag("flag", "cli flag").Float64(&flag).Default(2.71)
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(flag, 2.71)
+	isEqual(t, actual.String(), ``)
+}
+
+func TestFlagFloat64Required(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag float64
+	cli.Flag("flag", "cli flag").Float64(&flag)
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.True(err != nil)
+	is.Equal(err.Error(), "missing --flag")
+}
+
+func TestFlagOptionalFloat64(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var f *float64
+	cli.Flag("f", "float64").Optional().Float64(&f)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx, "--f=1.5")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(*f, 1.5)
+}
+
+func TestFlagOptionalFloat64Default(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var f *float64
+	cli.Flag("f", "float64").Optional().Float64(&f).Default(1.5)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(*f, 1.5)
+}
+
+func TestFlagOptionalFloat64Nil(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var f *float64
+	cli.Flag("f", "float64").Optional().Float64(&f)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(f, nil)
+}
+
+func TestArgFloat64(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var f float64
+	cli.Arg("f", "float64 arg").Float64(&f)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx, "3.14")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(f, 3.14)
+}
+
+func TestArgFloat64Invalid(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var f float64
+	cli.Arg("f", "float64 arg").Float64(&f)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx, "hi")
+	is.True(err != nil)
+	is.Equal(err.Error(), `<f>: expected a float64 but got "hi"`)
+}
+
+func TestArgOptionalFloat64(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var f *float64
+	cli.Arg("f", "float64 arg").Optional().Float64(&f)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx, "1.5")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(*f, 1.5)
+}
+
+func TestArgOptionalFloat64Default(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var f *float64
+	cli.Arg("f", "float64 arg").Optional().Float64(&f).Default(1.5)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(*f, 1.5)
+}
+
+func TestArgOptionalFloat64Nil(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	var f *float64
+	cli.Arg("f", "float64 arg").Optional().Float64(&f)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	ctx := context.Background()
+	err := cli.Parse(ctx)
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(f, nil)
+}
+
 func TestArgDash(t *testing.T) {
 	is := is.New(t)
 	actual := new(bytes.Buffer)

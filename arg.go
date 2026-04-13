@@ -44,6 +44,24 @@ func (a *Arg) Url(target *url.URL) *Url {
 	return value
 }
 
+func (a *Arg) Int64(target *int64) *Int64 {
+	value := &Int64{target, a.env, nil}
+	a.value = &int64Value{key: a.key(), inner: value}
+	return value
+}
+
+func (a *Arg) Float32(target *float32) *Float32 {
+	value := &Float32{target, a.env, nil}
+	a.value = &float32Value{key: a.key(), inner: value}
+	return value
+}
+
+func (a *Arg) Float64(target *float64) *Float64 {
+	value := &Float64{target, a.env, nil}
+	a.value = &float64Value{key: a.key(), inner: value}
+	return value
+}
+
 func (a *Arg) Bool(target *bool) *Bool {
 	value := &Bool{target, a.env, nil}
 	a.value = &boolValue{key: a.key(), inner: value}
@@ -103,6 +121,24 @@ func (a *OptionalArg) Duration(target **time.Duration) *OptionalDuration {
 func (a *OptionalArg) Url(target **url.URL) *OptionalUrl {
 	value := &OptionalUrl{target, a.a.env, nil}
 	a.a.value = &optionalUrlValue{key: a.key(), inner: value}
+	return value
+}
+
+func (a *OptionalArg) Int64(target **int64) *OptionalInt64 {
+	value := &OptionalInt64{target, a.a.env, nil}
+	a.a.value = &optionalInt64Value{key: a.key(), inner: value}
+	return value
+}
+
+func (a *OptionalArg) Float32(target **float32) *OptionalFloat32 {
+	value := &OptionalFloat32{target, a.a.env, nil}
+	a.a.value = &optionalFloat32Value{key: a.key(), inner: value}
+	return value
+}
+
+func (a *OptionalArg) Float64(target **float64) *OptionalFloat64 {
+	value := &OptionalFloat64{target, a.a.env, nil}
+	a.a.value = &optionalFloat64Value{key: a.key(), inner: value}
 	return value
 }
 

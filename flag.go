@@ -100,6 +100,24 @@ func (f *Flag) StringMap(target *map[string]string) *StringMap {
 	return value
 }
 
+func (f *Flag) Int64(target *int64) *Int64 {
+	value := &Int64{target, f.env, nil}
+	f.value = &int64Value{key: f.key(), inner: value}
+	return value
+}
+
+func (f *Flag) Float32(target *float32) *Float32 {
+	value := &Float32{target, f.env, nil}
+	f.value = &float32Value{key: f.key(), inner: value}
+	return value
+}
+
+func (f *Flag) Float64(target *float64) *Float64 {
+	value := &Float64{target, f.env, nil}
+	f.value = &float64Value{key: f.key(), inner: value}
+	return value
+}
+
 func (f *Flag) Bool(target *bool) *Bool {
 	value := &Bool{target, f.env, nil}
 	f.value = &boolValue{key: f.key(), inner: value}
@@ -139,6 +157,24 @@ func (f *OptionalFlag) Duration(target **time.Duration) *OptionalDuration {
 func (f *OptionalFlag) Url(target **url.URL) *OptionalUrl {
 	value := &OptionalUrl{target, f.f.env, nil}
 	f.f.value = &optionalUrlValue{key: f.key(), inner: value}
+	return value
+}
+
+func (f *OptionalFlag) Int64(target **int64) *OptionalInt64 {
+	value := &OptionalInt64{target, f.f.env, nil}
+	f.f.value = &optionalInt64Value{key: f.key(), inner: value}
+	return value
+}
+
+func (f *OptionalFlag) Float32(target **float32) *OptionalFloat32 {
+	value := &OptionalFloat32{target, f.f.env, nil}
+	f.f.value = &optionalFloat32Value{key: f.key(), inner: value}
+	return value
+}
+
+func (f *OptionalFlag) Float64(target **float64) *OptionalFloat64 {
+	value := &OptionalFloat64{target, f.f.env, nil}
+	f.f.value = &optionalFloat64Value{key: f.key(), inner: value}
 	return value
 }
 
