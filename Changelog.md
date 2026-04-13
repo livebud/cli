@@ -1,3 +1,7 @@
+# 0.0.27 / 2026-04-12
+
+- add: int64, float32, float64 types
+
 # 0.0.26 / 2026-03-17
 
 - add support for command aliasing: `cli.Command("list", "list command").Alias("ls")`
