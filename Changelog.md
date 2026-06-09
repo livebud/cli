@@ -1,3 +1,7 @@
+# 0.0.28 / 2026-06-09
+
+- support longer durations (e.g. `10d`, `-1y`)
+
 # 0.0.27 / 2026-04-12
 
 - add: int64, float32, float64 types
