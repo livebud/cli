@@ -120,7 +120,7 @@ func (v *optionalDurationValue) verify() error {
 }
 
 func (v *optionalDurationValue) Set(val string) error {
-	d, err := time.ParseDuration(val)
+	d, err := duration.Parse(val)
 	if err != nil {
 		return fmt.Errorf("%s: expected a duration but got %q", v.key, val)
 	}
@@ -196,7 +196,7 @@ func (v *durationsValue) Default() (string, bool) {
 }
 
 func (v *durationsValue) Set(val string) error {
-	d, err := time.ParseDuration(val)
+	d, err := duration.Parse(val)
 	if err != nil {
 		return fmt.Errorf("%s: expected a duration but got %q", v.key, val)
 	}

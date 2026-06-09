@@ -721,6 +721,25 @@ func TestFlagDurationInvalid(t *testing.T) {
 	is.Equal(err.Error(), `--flag: expected a duration but got "hi"`)
 }
 
+func TestFlagOptionalDurationLong(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag *time.Duration
+	cli.Flag("flag", "cli flag").Optional().Duration(&flag)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "--flag", "10d")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(*flag, 10*24*time.Hour)
+	isEqual(t, actual.String(), ``)
+}
+
 func TestFlagOptionalDurationInvalid(t *testing.T) {
 	is := is.New(t)
 	actual := new(bytes.Buffer)
@@ -2746,6 +2765,28 @@ func TestArgsOptionalDurationsEmpty(t *testing.T) {
 	is.NoErr(err)
 	is.Equal(1, called)
 	is.Equal(len(args), 0)
+	isEqual(t, actual.String(), ``)
+}
+
+func TestArgsOptionalDurationsLong(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "cli command").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var args []time.Duration
+	cli.Args("durations", "duration args").Optional().Durations(&args)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "10d", "20h", "3y")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(len(args), 3)
+	is.Equal(args[0], 10*24*time.Hour)
+	is.Equal(args[1], 20*time.Hour)
+	is.Equal(args[2], 3*365*24*time.Hour)
 	isEqual(t, actual.String(), ``)
 }
 
