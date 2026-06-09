@@ -1,3 +1,7 @@
+# 0.0.29 / 2026-06-09
+
+- add remaining durations (optional and list)
+
 # 0.0.28 / 2026-06-09
 
 - support longer durations (e.g. `10d`, `-1y`)
