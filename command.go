@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 )
 
@@ -354,8 +355,8 @@ func compose(run func(ctx context.Context) error, middlewares ...Middleware) fun
 		return nil
 	}
 	// apply in reverse so that the first middleware in the slice is executed first
-	for i := len(middlewares) - 1; i >= 0; i-- {
-		run = middlewares[i](run)
+	for _, middleware := range slices.Backward(middlewares) {
+		run = middleware(run)
 	}
 	return run
 }
