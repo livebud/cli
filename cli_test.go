@@ -666,6 +666,44 @@ func TestFlagDuration(t *testing.T) {
 	isEqual(t, actual.String(), ``)
 }
 
+func TestFlagDurationLong(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag time.Duration
+	cli.Flag("flag", "cli flag").Duration(&flag)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "--flag", "10d")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(flag, 10*24*time.Hour)
+	isEqual(t, actual.String(), ``)
+}
+
+func TestFlagDurationLongNegative(t *testing.T) {
+	is := is.New(t)
+	actual := new(bytes.Buffer)
+	called := 0
+	cli := cli.New("cli", "desc").Writer(actual)
+	cli.Run(func(ctx context.Context) error {
+		called++
+		return nil
+	})
+	var flag time.Duration
+	cli.Flag("flag", "cli flag").Duration(&flag)
+	ctx := context.Background()
+	err := cli.Parse(ctx, "--flag", "-10d")
+	is.NoErr(err)
+	is.Equal(1, called)
+	is.Equal(flag, -10*24*time.Hour)
+	isEqual(t, actual.String(), ``)
+}
+
 func TestFlagDurationInvalid(t *testing.T) {
 	is := is.New(t)
 	actual := new(bytes.Buffer)

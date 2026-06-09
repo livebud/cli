@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/caarlos0/duration"
 )
 
 type Duration struct {
@@ -52,7 +54,7 @@ func (v *durationValue) verify() error {
 }
 
 func (v *durationValue) Set(val string) error {
-	d, err := time.ParseDuration(val)
+	d, err := duration.Parse(val)
 	if err != nil {
 		return fmt.Errorf("%s: expected a duration but got %q", v.key, val)
 	}

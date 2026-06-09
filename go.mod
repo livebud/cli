@@ -3,6 +3,7 @@ module github.com/livebud/cli
 go 1.23.0
 
 require (
+	github.com/caarlos0/duration v0.0.0-20241219124531-2bb7dc683aa4
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/matryer/is v1.4.1
 	github.com/matthewmueller/diff v0.0.3
